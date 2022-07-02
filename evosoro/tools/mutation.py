@@ -138,7 +138,7 @@ def create_new_children_through_mutation(pop, print_log, new_children=None, muta
 
                 if not clone.genotype[selected_net_idx].direct_encoding:
                     for output_node in clone.genotype[selected_net_idx].output_node_names:
-                        clone.genotype[selected_net_idx].graph.node[output_node]["old_state"] = ""
+                        clone.genotype[selected_net_idx].graph.nodes[output_node]["old_state"] = ""
 
             # reset all objectives we calculate in VoxCad to unevaluated values
             for rank, goal in pop.objective_dict.items():

@@ -61,9 +61,9 @@ class CPPN(Network):
             self.graph.add_node(name, type="output", function=sigmoid)
 
         for input_node in nx.nodes(self.graph):
-            if self.graph.node[input_node]["type"] == "input":
+            if self.graph.nodes[input_node]["type"] == "input":
                 for output_node in nx.nodes(self.graph):
-                    if self.graph.node[output_node]["type"] == "output":
+                    if self.graph.nodes[output_node]["type"] == "output":
                         self.graph.add_edge(input_node, output_node, weight=0.0)
 
     def set_input_node_states(self, orig_size_xyz):
@@ -85,20 +85,20 @@ class CPPN(Network):
 
         for name in self.graph.nodes():
             if name == "x":
-                self.graph.node[name]["state"] = input_x
-                self.graph.node[name]["evaluated"] = True
+                self.graph.nodes[name]["state"] = input_x
+                self.graph.nodes[name]["evaluated"] = True
             if name == "y":
-                self.graph.node[name]["state"] = input_y
-                self.graph.node[name]["evaluated"] = True
+                self.graph.nodes[name]["state"] = input_y
+                self.graph.nodes[name]["evaluated"] = True
             if name == "z":
-                self.graph.node[name]["state"] = input_z
-                self.graph.node[name]["evaluated"] = True
+                self.graph.nodes[name]["state"] = input_z
+                self.graph.nodes[name]["evaluated"] = True
             if name == "d":
-                self.graph.node[name]["state"] = input_d
-                self.graph.node[name]["evaluated"] = True
+                self.graph.nodes[name]["state"] = input_d
+                self.graph.nodes[name]["evaluated"] = True
             if name == "b":
-                self.graph.node[name]["state"] = input_b
-                self.graph.node[name]["evaluated"] = True
+                self.graph.nodes[name]["state"] = input_b
+                self.graph.nodes[name]["evaluated"] = True
 
     def mutate(self, num_random_node_adds=5, num_random_node_removals=0, num_random_link_adds=10,
                num_random_link_removals=5, num_random_activation_functions=100, num_random_weight_changes=100):
@@ -141,11 +141,15 @@ class CPPN(Network):
     #   Mutation functions
     ###############################################
 
+    def random_node(self):
+        nodes = [n for n in self.graph.nodes()]
+        return random.choice(nodes)
+    
     def add_node(self):
         # choose two random nodes (between which a link could exist)
         if len(self.graph.edges()) == 0:
             return "NoEdges"
-        this_edge = random.choice(self.graph.edges())
+        this_edge = random.choice([e for e in self.graph.edges()])
         node1 = this_edge[0]
         node2 = this_edge[1]
 
@@ -158,7 +162,7 @@ class CPPN(Network):
         # if this edge already existed here, remove it
         # but use it's weight to minimize disruption when connecting to the previous input node
         if (node1, node2) in nx.edges(self.graph):
-            weight = self.graph.edge[node1][node2]["weight"]
+            weight = self.graph.edges[node1,node2]["weight"]
             self.graph.remove_edge(node1, node2)
             self. graph.add_edge(node1, new_node_index, weight=weight)
         else:
@@ -168,7 +172,8 @@ class CPPN(Network):
         return ""
 
     def remove_node(self):
-        hidden_nodes = list(set(self.graph.nodes()) - set(self.input_node_names) - set(self.output_node_names))
+        hidden_nodes = list(set([n for n in self.graph.nodes()])- set(self.input_node_names) - set(self.output_node_names))
+  
         if len(hidden_nodes) == 0:
             return "NoHiddenNodes"
         this_node = random.choice(hidden_nodes)
@@ -179,8 +184,8 @@ class CPPN(Network):
 
         for incoming_edge in incoming_edges:
             for outgoing_edge in outgoing_edges:
-                w = self.graph.edge[incoming_edge[0]][this_node]["weight"] * \
-                    self.graph.edge[this_node][outgoing_edge[1]]["weight"]
+                w = self.graph.edges[incoming_edge[0],this_node]["weight"] * \
+                    self.graph.edges[this_node,outgoing_edge[1]]["weight"]
                 self.graph.add_edge(incoming_edge[0], outgoing_edge[1], weight=w)
 
         self.graph.remove_node(this_node)
@@ -193,11 +198,11 @@ class CPPN(Network):
             done = True
 
             # choose two random nodes (between which a link could exist, *but doesn't*)
-            node1 = random.choice(self.graph.nodes())
-            node2 = random.choice(self.graph.nodes())
+            node1 = self.random_node()
+            node2 = self.random_node()
             while (not self.new_edge_is_valid(node1, node2)) and attempt < 999:
-                node1 = random.choice(self.graph.nodes())
-                node2 = random.choice(self.graph.nodes())
+                node1 = self.random_node()
+                node2 = self.random_node()
                 attempt += 1
             if attempt > 999:  # no valid edges to add found in 1000 attempts
                 done = True
@@ -220,23 +225,23 @@ class CPPN(Network):
     def remove_link(self):
         if len(self.graph.edges()) == 0:
             return "NoEdges"
-        this_link = random.choice(self.graph.edges())
+        this_link = random.choice([e for e in self.graph.edges()])
         self.graph.remove_edge(this_link[0], this_link[1])
         return ""
 
     def mutate_function(self):
-        this_node = random.choice(self.graph.nodes())
+        this_node = self.random_node()
         while this_node in self.input_node_names:
-            this_node = random.choice(self.graph.nodes())
-        old_function = self.graph.node[this_node]["function"]
-        while self.graph.node[this_node]["function"] == old_function:
-            self.graph.node[this_node]["function"] = random.choice(self.activation_functions)
-        return old_function.__name__ + "-to-" + self.graph.node[this_node]["function"].__name__
+            this_node = self.random_node()
+        old_function = self.graph.nodes[this_node]["function"]
+        while self.graph.nodes[this_node]["function"] == old_function:
+            self.graph.nodes[this_node]["function"] = random.choice(self.activation_functions)
+        return old_function.__name__ + "-to-" + self.graph.nodes[this_node]["function"].__name__
 
     def mutate_weight(self, mutation_std=0.5):
         if len(self.graph.edges()) == 0:
             return "NoEdges"
-        this_edge = random.choice(self.graph.edges())
+        this_edge = random.choice([e for e in self.graph.edges()])
         node1 = this_edge[0]
         node2 = this_edge[1]
         old_weight = self.graph[node1][node2]["weight"]
@@ -256,14 +261,14 @@ class CPPN(Network):
         done = False
         while not done:
             done = True
-            for node in self.graph.nodes():
+            for node in [n for n in self.graph.nodes()]:
                 if len(self.graph.in_edges(nbunch=[node])) == 0 and \
                                 node not in self.input_node_names and \
                                 node not in self.output_node_names:
                     self.graph.remove_node(node)
                     done = False
 
-            for node in self.graph.nodes():
+            for node in [n for n in self.graph.nodes()]:
                 if len(self.graph.out_edges(nbunch=[node])) == 0 and \
                                 node not in self.input_node_names and \
                                 node not in self.output_node_names:
@@ -281,16 +286,16 @@ class CPPN(Network):
     def get_max_hidden_node_index(self):
         max_index = 0
         for input_node in nx.nodes(self.graph):
-            if self.graph.node[input_node]["type"] == "hidden" and int(input_node) >= max_index:
+            if self.graph.nodes[input_node]["type"] == "hidden" and int(input_node) >= max_index:
                 max_index = input_node + 1
         return max_index
 
     def new_edge_is_valid(self, node1, node2):
         if node1 == node2:
             return False
-        if self.graph.node[node1]['type'] == "output":
+        if self.graph.nodes[node1]['type'] == "output":
             return False
-        if self.graph.node[node2]['type'] == "input":
+        if self.graph.nodes[node2]['type'] == "input":
             return False
         if (node2, node1) in nx.edges(self.graph):
             return False

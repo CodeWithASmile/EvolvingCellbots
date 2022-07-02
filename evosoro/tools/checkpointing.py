@@ -1,6 +1,6 @@
 import random
 import os
-import cPickle
+import pickle
 import numpy as np
 import subprocess as sub
 from glob import glob
@@ -13,7 +13,7 @@ def continue_from_checkpoint(directory="tests_data", additional_gens=0, max_hour
 
     if os.path.isfile("./" + directory + "/RUNNING"):
         sub.call("touch {}/DUPLICATE".format(directory), shell=True)
-        print "Duplicate job submitted"
+        print("Duplicate job submitted")
 
     else:
         sub.call("touch {}/RUNNING".format(directory), shell=True)
@@ -26,7 +26,7 @@ def continue_from_checkpoint(directory="tests_data", additional_gens=0, max_hour
                 pickled_pops = glob(directory + "/pickledPops/*")
                 last_gen = natural_sort(pickled_pops, reverse=True)[pickle_idx]
                 with open(last_gen, 'rb') as handle:
-                    [optimizer, random_state, numpy_random_state] = cPickle.load(handle)
+                    [optimizer, random_state, numpy_random_state] = pickle.load(handle)
                 successful_restart = True
 
             except EOFError:

@@ -3,7 +3,7 @@ import random
 import numpy as np
 import subprocess as sub
 
-from read_write_voxelyze import read_voxlyze_results, write_voxelyze_file
+from evosoro.tools.read_write_voxelyze import read_voxlyze_results, write_voxelyze_file
 
 
 # TODO: make eval times relative to the number of simulated voxels
@@ -12,7 +12,7 @@ from read_write_voxelyze import read_voxlyze_results, write_voxelyze_file
 # getattr(ind, pop.objective_dict[0]["name"])
 # TODO: the location of voxelyze and the data must be consistent and specified or more robust (cp for now)
 # sub.call("cp ../_voxcad/voxelyzeMain/voxelyze .", shell=True)
-# sub.call("cp ../_voxcad/qhull .", shell=True)
+sub.call("cp ../_voxcad/qhull .", shell=True)
 
 
 def evaluate_all(sim, env, pop, print_log, save_vxa_every, run_directory, run_name, max_eval_time=60,
@@ -113,7 +113,7 @@ def evaluate_all(sim, env, pop, print_log, save_vxa_every, run_directory, run_na
             # try to redo any simulations that crashed
             redo_attempts += 1
             non_analyzed_ids = [idx for idx in ids_to_analyze if idx not in already_analyzed_ids]
-            print "Rerunning voxelyze for: ", non_analyzed_ids
+            print("Rerunning voxelyze for: ", non_analyzed_ids)
             for idx in non_analyzed_ids:
                 sub.Popen("./voxelyze  -f " + run_directory + "/voxelyzeFiles/" + run_name + "--id_%05i.vxa" % idx,
                           shell=True)
@@ -125,7 +125,7 @@ def evaluate_all(sim, env, pop, print_log, save_vxa_every, run_directory, run_na
                 all_done = False
 
         # check for any fitness files that are present
-        ls_check = sub.check_output(["ls", run_directory + "/fitnessFiles/"])
+        ls_check = sub.check_output(["ls", run_directory + "/fitnessFiles/"], text=True)
         # duplicated ids issue: may be due to entering here two times for the same fitness file found in the directory.
 
         if ls_check:

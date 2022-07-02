@@ -44,11 +44,15 @@ from evosoro.tools.checkpointing import continue_from_checkpoint
 
 
 VOXELYZE_VERSION = '_voxcad_land_water'  # Let's source a different version of VoxCad, supporting water
-# sub.call("rm ./voxelyze", shell=True)
+#sub.call("rm ./voxelyze", shell=True)
 sub.call("cp ../" + VOXELYZE_VERSION + "/voxelyzeMain/voxelyze .", shell=True)  # Making sure to have the most up-to-date version of the Voxelyze physics engine
-# sub.call("chmod 755 ./voxelyze", shell=True)
-# sub.call("cp ../_voxcad/qhull .", shell=True)  # Auxiliary qhull executable, used in some experiments to compute the convex hull of the robot
-# sub.call("chmod 755 ./qhull", shell=True)  # Execution right for qhull
+#sub.call("chmod 755 ./voxelyze", shell=True)
+#sub.call("cp ../_voxcad/qhull .", shell=True)  # Auxiliary qhull executable, used in some experiments to compute the convex hull of the robot
+#sub.call("chmod 755 ./qhull", shell=True)  # Execution right for qhull
+sub.call("cp ../_voxcad/qhull ./swimming_basic_data/tempFiles", shell=True)  # Auxiliary qhull executable, used in some experiments to compute the convex hull of the robot
+sub.call("chmod 755 ./swimming_basic_data/tempFiles/qhull", shell=True)  # Execution right for qhull
+
+
 
 NUM_RANDOM_INDS = 1  # Number of random individuals to insert each generation (increases diversity, works with AFPO when minimizing "age")
 MAX_GENS = 1000  # Number of generations

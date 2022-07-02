@@ -144,7 +144,7 @@ def make_material_tree(this_softbot, *args, **kwargs):
             for network in this_softbot:
                 if dependency_name in network.graph.nodes():
                     mapping.dependencies[dependency_name]["state"] = \
-                        network.graph.node[dependency_name]["state"] > 0
+                        network.graph.nodes[dependency_name]["state"] > 0
 
     if material["dependency_order"] is not None:
         for dependency_name in reversed(material["dependency_order"]):
@@ -170,7 +170,7 @@ def make_material_tree_single_muscle_patches(this_softbot, *args, **kwargs):
         for network in this_softbot:
             if dependency_name in network.graph.nodes():
                 mapping.dependencies[dependency_name]["state"] = \
-                    network.graph.node[dependency_name]["state"] > 0
+                    network.graph.nodes[dependency_name]["state"] > 0
 
     # for name, details in mapping.items():
     #     if details["dependency_order"] is not None:

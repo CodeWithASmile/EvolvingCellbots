@@ -94,7 +94,7 @@ def pareto_tournament_selection(population):
     # population.add_random_individual()  # adding in random ind in algorithms.py
     population.calc_dominance()
     random.shuffle(population.individuals)
-    print "The nondominated size is", population.non_dominated_size
+    print("The nondominated size is", population.non_dominated_size)
 
     while len(population) > population.pop_size and len(population) > population.non_dominated_size:
 
@@ -103,12 +103,12 @@ def pareto_tournament_selection(population):
         ind1 = population[inds[1]]
 
         if population.dominated_in_multiple_objectives(ind0, ind1):
-            print "(fit) {0} dominated by {1}".format(ind0.fitness, ind1.fitness)
-            print "(age) {0} dominated by {1}".format(ind0.age, ind1.age)
+            print("(fit) {0} dominated by {1}".format(ind0.fitness, ind1.fitness))
+            print("(age) {0} dominated by {1}".format(ind0.age, ind1.age))
             population.pop(inds[0])
         elif population.dominated_in_multiple_objectives(ind1, ind0):
-            print "(fit) {1} dominated by {0}".format(ind0.fitness, ind1.fitness)
-            print "(age) {1} dominated by {0}".format(ind0.age, ind1.age)
+            print("(fit) {1} dominated by {0}".format(ind0.fitness, ind1.fitness))
+            print("(age) {1} dominated by {0}".format(ind0.age, ind1.age))
             population.pop(inds[1])
         # else:
         #     population.pop(random.choice(inds))

@@ -98,7 +98,7 @@ def record_individuals_data(pop, path, num_inds_to_save=None, print_to_terminal=
         header_string += "\t\tparent_id"
         header_string += "\t\tvariation_type"
 
-        print "\n"+header_string
+        print("\n"+header_string)
 
     output_names = pop[0].genotype.all_networks_outputs
     output_names.sort()
@@ -173,20 +173,24 @@ def initialize_folders(population, run_directory, run_name, save_networks, save_
     # sub.call("mkdir " + run_directory + "/" + run_name + "/" + " 2>/dev/null", shell=True)
     ret = sub.call("mkdir " + run_directory + "/" + " 2>/dev/null", shell=True)
     if ret != 0:
-        response = raw_input("****************************************************\n"
+        response = input("****************************************************\n"
                              "** WARNING ** A directory named " + run_directory +
                              " may exist already and would be erased.\n ARE YOU SURE YOU WANT TO CONTINUE? (y/n): ")
         if not (("Y" in response) or ("y" in response)):
             quit("Please change run name with -n DifferentName. Quitting.\n"
                  "****************************************************\n\n")
         else:
-            print "****************************************************\n"
+            print("****************************************************\n")
 
     # clear directory
     sub.call("rm -rf " + run_directory + "/* 2>/dev/null", shell=True)
 
     sub.call("mkdir " + run_directory + "/voxelyzeFiles 2> /dev/null", shell=True)
     sub.call("mkdir " + run_directory + "/tempFiles 2> /dev/null", shell=True)
+
+    sub.call("cp " + run_directory + " ../_voxcad/qhull " + run_directory, shell=True)  # Auxiliary qhull executable, used in some experiments to compute the convex hull of the robot
+    sub.call("chmod 755 " + run_directory + "/qhull", shell=True)  # Execution right for qhull
+
     sub.call("mkdir " + run_directory + "/fitnessFiles 2> /dev/null", shell=True)
 
     sub.call("mkdir " + run_directory + "/bestSoFar 2> /dev/null", shell=True)
@@ -212,11 +216,11 @@ def initialize_folders(population, run_directory, run_name, save_networks, save_
 
 def make_gen_directories(population, run_directory, save_vxa_every, save_networks):
 
-    print "\n\n"
-    print "----------------------------------"
-    print "---------- GENERATION", population.gen, "----------"
-    print "----------------------------------"
-    print "\n"
+    print("\n\n")
+    print("----------------------------------")
+    print("---------- GENERATION", population.gen, "----------")
+    print("----------------------------------")
+    print("\n")
 
     if population.gen % save_vxa_every == 0 and save_vxa_every > 0:
         sub.call("mkdir " + run_directory + "/Gen_%04i" % population.gen, shell=True)
@@ -259,7 +263,7 @@ def write_gen_individuals_data(population, run_directory, num_inds_to_save):
 
 def remove_old_lineages(population, run_directory):
     population.update_lineages()
-    print " Length of best lineage: {}".format(len(population.lineage_dict[population[0].id]))
+    print(" Length of best lineage: {}".format(len(population.lineage_dict[population[0].id])))
 
     ancestors_ids = [ind.id for ind in population]  # include current generation
     for child, lineage in population.lineage_dict.items():

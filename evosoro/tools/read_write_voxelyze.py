@@ -402,6 +402,6 @@ def write_voxelyze_file(sim, env, individual, run_directory, run_name):
     voxelyze_file.close()
 
     m = hashlib.md5()
-    m.update(string_for_md5)
+    m.update(string_for_md5.encode('utf-8'))
 
     return m.hexdigest()

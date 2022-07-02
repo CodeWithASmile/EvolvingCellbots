@@ -68,13 +68,13 @@ class Genotype(object):
         for network in self:
             if not network.direct_encoding:
                 for name in network.graph.nodes():
-                    network.graph.node[name]["evaluated"] = False  # flag all nodes as unevaluated
+                    network.graph.nodes[name]["evaluated"] = False  # flag all nodes as unevaluated
 
                 network.set_input_node_states(self.orig_size_xyz)  # reset the inputs
 
                 for name in network.output_node_names:
-                    network.graph.node[name]["state"] = np.zeros(self.orig_size_xyz)  # clear old outputs
-                    network.graph.node[name]["state"] = self.calc_node_state(network, name)  # calculate new outputs
+                    network.graph.nodes[name]["state"] = np.zeros(self.orig_size_xyz)  # clear old outputs
+                    network.graph.nodes[name]["state"] = self.calc_node_state(network, name)  # calculate new outputs
 
         for network in self:
             for name in network.output_node_names:
@@ -97,24 +97,24 @@ class Genotype(object):
 
     def calc_node_state(self, network, node_name):
         """Propagate input values through the network"""
-        if network.graph.node[node_name]["evaluated"]:
-            return network.graph.node[node_name]["state"]
+        if network.graph.nodes[node_name]["evaluated"]:
+            return network.graph.nodes[node_name]["state"]
 
-        network.graph.node[node_name]["evaluated"] = True
+        network.graph.nodes[node_name]["evaluated"] = True
         input_edges = network.graph.in_edges(nbunch=[node_name])
         new_state = np.zeros(self.orig_size_xyz)
 
         for edge in input_edges:
             node1, node2 = edge
-            new_state += self.calc_node_state(network, node1) * network.graph.edge[node1][node2]["weight"]
+            new_state += self.calc_node_state(network, node1) * network.graph.edges[node1,node2]["weight"]
 
-        network.graph.node[node_name]["state"] = new_state
+        network.graph.nodes[node_name]["state"] = new_state
 
         if node_name in self.to_phenotype_mapping:
             if self.to_phenotype_mapping[node_name]["dependency_order"] is None:
                 return self.to_phenotype_mapping[node_name]["func"](new_state)
 
-        return network.graph.node[node_name]["function"](new_state)
+        return network.graph.nodes[node_name]["function"](new_state)
 
 
 class GenotypeToPhenotypeMap(object):
@@ -480,7 +480,7 @@ class Population(object):
         for ind in self:
             if math.isnan(ind.fitness):
                 ind.fitness = self.objective_dict[0]["worst_value"]
-                print "FITNESS WAS NAN, RESETTING IT TO:", self.objective_dict[0]["worst_value"]
+                print("FITNESS WAS NAN, RESETTING IT TO:", self.objective_dict[0]["worst_value"])
 
         self.sort(key="id", reverse=True)  # (max) promotes neutral mutation
         self.sort(key="age", reverse=False)  # (min) protects younger, undeveloped solutions
