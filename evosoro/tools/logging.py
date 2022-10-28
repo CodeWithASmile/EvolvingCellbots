@@ -129,8 +129,8 @@ def record_individuals_data(pop, path, num_inds_to_save=None, print_to_terminal=
                 for network, parent_network in zip(ind.genotype, ind.parent_genotype):
                     if name in network.output_node_names:
                         if not network.direct_encoding:
-                            state = network.graph.node[name]["state"]
-                            parent_state = parent_network.graph.node[name]["state"]
+                            state = network.graph.nodes[name]["state"]
+                            parent_state = parent_network.graph.nodes[name]["state"]
                         else:
                             state = network.values
                             parent_state = parent_network.values
@@ -297,8 +297,8 @@ def write_networks(population, run_directory):
         net_idx = 0
         for network in clone.genotype:
             for name in network.graph.nodes():
-                network.graph.node[name]["state"] = ""  # remove state information to reduce file size
-                network.graph.node[name]["evaluated"] = 0
+                network.graph.nodes[name]["state"] = ""  # remove state information to reduce file size
+                network.graph.nodes[name]["evaluated"] = 0
             nx.write_gml(network.graph, run_directory +
                          "/network_gml/Gen_%04i/network--%02i--fit_%.08f--id_%05i" %
                          (population.gen, net_idx, clone.fitness, clone.id) + ".txt")

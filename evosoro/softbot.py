@@ -80,7 +80,7 @@ class Genotype(object):
             for name in network.output_node_names:
                 if name in self.to_phenotype_mapping:
                     if not network.direct_encoding:
-                        self.to_phenotype_mapping[name]["state"] = network.graph.node[name]["state"]
+                        self.to_phenotype_mapping[name]["state"] = network.graph.nodes[name]["state"]
                     else:
                         self.to_phenotype_mapping[name]["state"] = network.values
 
