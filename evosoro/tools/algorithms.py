@@ -154,8 +154,8 @@ class PopulationBasedOptimizer(Optimizer):
 
 
 class ParetoOptimization(PopulationBasedOptimizer):
-    def __init__(self, sim, env, pop):
-        PopulationBasedOptimizer.__init__(self, sim, env, pop, pareto_selection, create_new_children_through_mutation)
+    def __init__(self, sim, env, pop,mutation_func=create_new_children_through_mutation):
+        PopulationBasedOptimizer.__init__(self, sim, env, pop, pareto_selection, mutation_func)
 
 
 class ParetoTournamentOptimization(PopulationBasedOptimizer):

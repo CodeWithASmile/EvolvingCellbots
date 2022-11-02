@@ -11,6 +11,10 @@ def identity(x):
 def sigmoid(x):
     return 2.0 / (1.0 + np.exp(-x)) - 1.0
 
+def stable_sigmoid(x):
+    sig = np.where(x < 0, np.exp(x)/(1 + np.exp(x)), 1/(1 + np.exp(-x)))
+    return sig
+
 
 def positive_sigmoid(x):
     return (1 + sigmoid(x)) * 0.5

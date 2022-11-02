@@ -3,8 +3,9 @@ import random
 import numpy as np
 import subprocess as sub
 
-from evosoro.tools.read_write_voxelyze import read_voxlyze_results, write_voxelyze_file
-
+from evosoro.cellbot import CellBot
+from evosoro.tools.read_write_voxelyze import read_voxlyze_results, write_voxelyze_file, write_voxelyze_file_cell
+from evosoro.tools.read_write_data import plot_growth
 
 # TODO: make eval times relative to the number of simulated voxels
 # TODO: right now just saving files gen-id-fitness; but this should be more flexible (as option in objective dict?)
@@ -58,8 +59,11 @@ def evaluate_all(sim, env, pop, print_log, save_vxa_every, run_directory, run_na
 
     for ind in pop:
 
-        # write the phenotype of a SoftBot to a file so that VoxCad can access for sim.
-        ind.md5 = write_voxelyze_file(sim, env, ind, run_directory, run_name)
+        if type(ind) == CellBot:
+            ind.md5 = write_voxelyze_file_cell(sim, env, ind, run_directory, run_name)
+        else:
+            # write the phenotype of a SoftBot to a file so that VoxCad can access for sim.
+            ind.md5 = write_voxelyze_file(sim, env, ind, run_directory, run_name)
 
         # don't evaluate if invalid
         if not ind.phenotype.is_valid():
@@ -73,7 +77,7 @@ def evaluate_all(sim, env, pop, print_log, save_vxa_every, run_directory, run_na
             for rank, goal in pop.objective_dict.items():
                 if goal["tag"] is not None:
                     setattr(ind, goal["name"], pop.already_evaluated[ind.md5][rank])
-            # print_log.message("Individual already evaluated:  cached fitness is {}".format(ind.fitness))
+            print_log.message("Individual {} already evaluated:  cached fitness is {}".format(ind.id, ind.fitness))
 
             if pop.gen % save_vxa_every == 0 and save_vxa_every > 0:
                 sub.call("cp " + run_directory + "/voxelyzeFiles/" + run_name + "--id_%05i.vxa" % ind.id +
@@ -171,11 +175,12 @@ def evaluate_all(sim, env, pop, print_log, save_vxa_every, run_directory, run_na
                                     #             # apply the specified function to the specified output node
                                     #             state = network.graph.node[name]["state"]
                                     #             setattr(ind, details["name"], details["node_func"](state))
+                                    '''
                                     for name, details_phenotype in ind.genotype.to_phenotype_mapping.items():
                                         if name == details["output_node_name"]:
                                             state = details_phenotype["state"]
                                             setattr(ind, details["name"], details["node_func"](state))
-
+                                    '''
                             pop.already_evaluated[ind.md5] = [getattr(ind, details["name"])
                                                               for rank, details in
                                                               pop.objective_dict.items()]
@@ -188,6 +193,8 @@ def evaluate_all(sim, env, pop, print_log, save_vxa_every, run_directory, run_na
                                          ind.id + " " + run_directory + "/bestSoFar/fitOnly/" + run_name +
                                          "--Gen_%04i--fit_%.08f--id_%05i.vxa" %
                                          (pop.gen, ind.fitness, ind.id), shell=True)
+                                if type(ind) == CellBot:
+                                    plot_growth(ind,pop.gen,run_directory,run_name)
 
                             if save_lineages:
                                 sub.call("cp " + run_directory + "/voxelyzeFiles/" + run_name + "--id_%05i.vxa" %

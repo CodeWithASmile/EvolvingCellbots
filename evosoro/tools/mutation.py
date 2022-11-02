@@ -151,6 +151,84 @@ def create_new_children_through_mutation(pop, print_log, new_children=None, muta
 
     return new_children
 
+def create_new_children_through_mutation_cell(pop, print_log, new_children=None, max_mutation_attempts=1500):
+    """Create copies, with modification, of existing individuals in the population.
+
+    Parameters
+    ----------
+    pop : Population class
+        This provides the individuals to mutate.
+
+    print_log : PrintLog()
+        For logging
+
+    new_children : a list of new children created outside this function (may be empty)
+        This is useful if creating new children through multiple functions, e.g. Crossover and Mutation.
+
+    max_mutation_attempts : int
+        Maximum number of invalid mutation attempts to allow before giving up on mutating a particular individual.
+
+    Returns
+    -------
+    new_children : list
+        A list of new individual CellBots.
+
+    """
+    if new_children is None:
+        new_children = []
+
+    random.shuffle(pop.individuals)
+
+    while len(new_children) < pop.pop_size:
+        for ind in pop:
+            clone = copy.deepcopy(ind)
+
+
+            for rank, goal in pop.objective_dict.items():
+                setattr(clone, "parent_{}".format(goal["name"]), getattr(clone, goal["name"]))
+
+            clone.parent_genotype = ind.genotype
+            clone.parent_id = clone.id
+
+            old_state = copy.deepcopy(clone.phenotype.eval_state)
+
+            # old_individual = copy.deepcopy(clone)
+            mutation_counter = 0
+            done = False
+            while not done:
+                mutation_counter += 1
+                candidate = copy.deepcopy(clone)
+                candidate.genotype.model.mutate()
+                candidate.phenotype.initialise()
+                if candidate.genotype.model.allow_neutral_mutations:
+                    done = True
+                    clone = copy.deepcopy(candidate)
+                    break
+                else:
+                    new_state = candidate.phenotype.eval_state
+                    changes = np.array(new_state != old_state, dtype=np.bool)
+                    if np.any(changes) and candidate.phenotype.is_valid():
+                        done = True
+                        clone = copy.deepcopy(candidate)  # SAM: ensures change is made to every net
+                        break
+
+
+                if mutation_counter > max_mutation_attempts:
+                    print_log.message("Couldn't find a successful mutation in {} attempts! "
+                                      "Skipping this individiual.".format(max_mutation_attempts))
+                    break
+
+            # reset all objectives we calculate in VoxCad to unevaluated values
+            for rank, goal in pop.objective_dict.items():
+                if goal["tag"] is not None:
+                    setattr(clone, goal["name"], goal["worst_value"])
+
+            clone.id = pop.max_id
+            pop.max_id += 1
+            new_children.append(clone)
+
+    return new_children
+
 
 def genome_wide_mutation(pop, print_log):
     mutate_network_probs = [1 for _ in range(len(pop[0].genotype))]

@@ -64,6 +64,7 @@ def make_header(population, path):
         header_string += "\t\t{}".format(objective["name"]) + "\t\t{}".format("parent_"+objective["name"])
 
     # columns for network outputs
+    '''
     ind = population[0]
     output_names = ind.genotype.all_networks_outputs
     output_names.sort()
@@ -76,7 +77,7 @@ def make_header(population, path):
                 header_string += "\t\t" + stat.__name__ + "_" + name
                 header_string += "\t\t" + stat.__name__ + "_parent_" + name
                 header_string += "\t\t" + stat.__name__ + "_parent_diff_" + name
-
+    '''
     _file.write(header_string + "\n")
     _file.close()
 
@@ -99,9 +100,9 @@ def record_individuals_data(pop, path, num_inds_to_save=None, print_to_terminal=
         header_string += "\t\tvariation_type"
 
         print("\n"+header_string)
-
-    output_names = pop[0].genotype.all_networks_outputs
-    output_names.sort()
+    
+    #output_names = pop[0].genotype.all_networks_outputs
+    #output_names.sort()
 
     recording_file = open(path, 'a')
     n = 0
@@ -124,6 +125,7 @@ def record_individuals_data(pop, path, num_inds_to_save=None, print_to_terminal=
         # network outputs
         # for name in output_names:
         #     details = ind.genotype.to_phenotype_mapping[name]
+        '''
         for name, details in ind.genotype.to_phenotype_mapping.items():
             if details["logging_stats"] is not None:
                 for network, parent_network in zip(ind.genotype, ind.parent_genotype):
@@ -141,7 +143,7 @@ def record_individuals_data(pop, path, num_inds_to_save=None, print_to_terminal=
                             objectives_string += "{}\t\t".format(stat(state))
                             objectives_string += "{}\t\t".format(stat(parent_state))
                             objectives_string += "{}\t\t".format(stat(diff))
-
+        '''
         # recording_file.write(str(pop.gen) + "\t\t" + str(ind.id) + "\t\t" + str(ind.age) + "\t\t" +
         #                      ind.variation_type + objectives_string + "\n")
 
