@@ -704,17 +704,17 @@ def write_voxelyze_file_cell(sim, env, individual, run_directory, run_name):
         </Material>\n\
         </Palette>\n\
         <Structure Compression=\"ASCII_READABLE\">\n\
-        <X_Voxels>" + str(individual.genotype.orig_size_xyz[2]) + "</X_Voxels>\n\
-        <Y_Voxels>" + str(individual.genotype.orig_size_xyz[1]) + "</Y_Voxels>\n\
-        <Z_Voxels>" + str(individual.genotype.orig_size_xyz[0]) + "</Z_Voxels>\n")
+        <X_Voxels>" + str(individual.genotype.model.robot_shape[2]) + "</X_Voxels>\n\
+        <Y_Voxels>" + str(individual.genotype.model.robot_shape[1]) + "</Y_Voxels>\n\
+        <Z_Voxels>" + str(individual.genotype.model.robot_shape[0]) + "</Z_Voxels>\n")
 
     # append custom parameters
     string_for_md5 = ""
     voxelyze_file.write("<Data>\n")
-    for z in range(individual.genotype.orig_size_xyz[0]):
+    for z in range(individual.genotype.model.robot_shape[0]):
         voxelyze_file.write("<Layer><![CDATA[")
-        for y in range(individual.genotype.orig_size_xyz[1]):
-            for x in range(individual.genotype.orig_size_xyz[2]):
+        for y in range(individual.genotype.model.robot_shape[1]):
+            for x in range(individual.genotype.model.robot_shape[2]):
                 state = int(individual.phenotype.eval_state[z][y][x])
                 voxelyze_file.write(str(state))
                 string_for_md5 += str(state)

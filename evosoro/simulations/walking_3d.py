@@ -66,15 +66,16 @@ DT_FRAC = 0.9  # Fraction of the optimal integration step. The lower, the more s
 TIME_TO_TRY_AGAIN = 30  # (seconds) wait this long before assuming simulation crashed and resending
 MAX_EVAL_TIME = 120  # (seconds) wait this long before giving up on evaluating this individual
 SAVE_LINEAGES = False
-MAX_TIME = 8  # (hours) how long to wait before autosuspending
+MAX_TIME = 36  # (hours) how long to wait before autosuspending
 EXTRA_GENS = 0  # extra gens to run when continuing from checkpoint
 
-RUN_DIR = "walking"  # Subdirectory where results are going to be generated
-RUN_NAME = "Walking"
+RUN_DIR = "stable"  # Subdirectory where results are going to be generated
+RUN_NAME = "Stable"
 CHECKPOINT_EVERY = 10  # How often to save an snapshot of the execution state to later resume the algorithm
 SAVE_POPULATION_EVERY = 1  # How often (every x generations) we save a snapshot of the evolving population
 
 EVAL_STAGE = 10
+STABLE_STAGES = [11,12,13,14,15]
 
 
 
@@ -95,7 +96,7 @@ if __name__ == "__main__":
         def __init__(self, orig_size_xyz=IND_SIZE):
             # We instantiate a new genotype for each individual which must have the following properties
             model = CA(orig_size_xyz)
-            CellBotGenotype.__init__(self, model, orig_size_xyz)
+            CellBotGenotype.__init__(self, model)
 
             # The genotype consists of a single Compositional Pattern Producing Network (CPPN),
             # with multiple inter-dependent outputs determining the material constituting each voxel
@@ -109,10 +110,28 @@ if __name__ == "__main__":
     # Define a custom phenotype, inheriting from the Phenotype class
     class MyPhenotype(CellBotPhenotype):
         
-        def __init__(self, genotype):
+        def __init__(self, genotype, stable_stages=STABLE_STAGES):
             # We instantiate a new genotype for each individual which must have the following properties
+            self.stable_stages = stable_stages
             CellBotPhenotype.__init__(self, genotype, eval_stage=EVAL_STAGE)
-        
+            
+        def initialise(self):
+            a = np.zeros(shape=self.genotype.model.robot_shape)
+            np.put(a,a.size//2,1)
+            self.state_history = [a]
+            self.alpha_history = [a]
+            self.grow(max([self.eval_stage] + self.stable_stages))
+            
+        def _get_instability(self):
+            target = self.state_history[self.eval_stage-1]
+            changes = 0
+            for ss in self.stable_stages:
+                changes = np.sum(target != self.state_history[ss-1])
+            return changes
+            
+        instability = property(fget=_get_instability)        
+            
+            
 
     # Setting up the simulation object
     my_sim = Sim(dt_frac=DT_FRAC, simulation_time=SIM_TIME, fitness_eval_init_time=INIT_TIME)
@@ -127,6 +146,8 @@ if __name__ == "__main__":
     # Adding an objective named "fitness", which we want to maximize. This information is returned by Voxelyze
     # in a fitness .xml file, with a tag named "NormFinalDist"
     my_objective_dict.add_objective(name="fitness", maximize=True, tag="<normAbsoluteDisplacement>")
+    
+    my_objective_dict.add_objective(name="phenotype.instability", maximize=False, tag=None, logging_only=True)
 
     # Add an objective to minimize the age of solutions: promotes diversity
     my_objective_dict.add_objective(name="age", maximize=False, tag=None)
@@ -136,7 +157,8 @@ if __name__ == "__main__":
     # morphologies.
     # This information can be computed in Python (it's not returned by Voxelyze, thus tag=None),
     # which is done by counting the non empty voxels (material != 0) composing the robot.
-    my_objective_dict.add_objective(name="size", maximize=False, tag=None)
+    my_objective_dict.add_objective(name="phenotype.size", maximize=False, tag=None)
+    
 
 
     # Initializing a population of SoftBots

@@ -2,6 +2,7 @@ import numpy as np
 import itertools
 import re
 import scipy.ndimage as ndimage
+import functools
 
 
 def identity(x):
@@ -109,9 +110,9 @@ def replace_text_in_file(filename, replacements_dict):
 def dominates(ind1, ind2, attribute_name, maximize):
     """Returns True if ind1 dominates ind2 in a shared attribute."""
     if maximize:
-        return getattr(ind1, attribute_name) > getattr(ind2, attribute_name)
+        return rgetattr(ind1, attribute_name) > rgetattr(ind2, attribute_name)
     else:
-        return getattr(ind1, attribute_name) < getattr(ind2, attribute_name)
+        return rgetattr(ind1, attribute_name) < rgetattr(ind2, attribute_name)
 
 
 def count_occurrences(x, keys):
@@ -297,3 +298,22 @@ def count_neighbors(output_state, mask=None):
                 num_neighbors[idx] += presence[neighbor]
 
     return num_neighbors
+
+def rsetattr(obj, attr, val):
+    pre, _, post = attr.rpartition('.')
+    return setattr(rgetattr(obj, pre) if pre else obj, post, val)
+
+def rgetattr(obj, attr, *args):
+    def _getattr(obj, attr):
+        return getattr(obj, attr, *args)
+    return functools.reduce(_getattr, [obj] + attr.split('.'))
+
+def rhasattr(obj, attr):
+    _nested_attrs = attr.split(".")
+    _curr_obj = obj
+    for _a in _nested_attrs[:-1]:
+        if hasattr(_curr_obj, _a):
+            _curr_obj = getattr(_curr_obj, _a)
+        else:
+            return False
+    return hasattr(_curr_obj, _nested_attrs[-1])

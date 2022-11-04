@@ -57,7 +57,7 @@ sub.call("cp ../" + VOXELYZE_VERSION + "/voxelyzeMain/voxelyze .", shell=True)  
 NUM_RANDOM_INDS = 1  # Number of random individuals to insert each generation
 MAX_GENS = 1 # Number of generations
 POPSIZE = 3  # Population size (number of individuals in the population)
-IND_SIZE = (7, 7, 7)  # Bounding box dimensions (x,y,z). e.g. IND_SIZE = (6, 6, 6) -> workspace is a cube of 6x6x6 voxels
+IND_SIZE = (3, 3, 3)  # Bounding box dimensions (x,y,z). e.g. IND_SIZE = (6, 6, 6) -> workspace is a cube of 6x6x6 voxels
 SIM_TIME = 5  # (seconds), including INIT_TIME!
 INIT_TIME = 1
 DT_FRAC = 0.9  # Fraction of the optimal integration step. The lower, the more stable (and slower) the simulation.
@@ -65,10 +65,10 @@ DT_FRAC = 0.9  # Fraction of the optimal integration step. The lower, the more s
 TIME_TO_TRY_AGAIN = 30  # (seconds) wait this long before assuming simulation crashed and resending
 MAX_EVAL_TIME = 120  # (seconds) wait this long before giving up on evaluating this individual
 SAVE_LINEAGES = False
-MAX_TIME = 8  # (hours) how long to wait before autosuspending
+MAX_TIME =36  # (hours) how long to wait before autosuspending
 EXTRA_GENS = 0  # extra gens to run when continuing from checkpoint
 
-RUN_DIR = "basic_data_plot"  # Subdirectory where results are going to be generated
+RUN_DIR = "basic_data"  # Subdirectory where results are going to be generated
 RUN_NAME = "Basic"
 CHECKPOINT_EVERY = 10  # How often to save an snapshot of the execution state to later resume the algorithm
 SAVE_POPULATION_EVERY = 1  # How often (every x generations) we save a snapshot of the evolving population
@@ -85,7 +85,7 @@ class MyGenotype(CellBotGenotype):
     def __init__(self, orig_size_xyz=IND_SIZE):
         # We instantiate a new genotype for each individual which must have the following properties
         model = CA(orig_size_xyz)
-        CellBotGenotype.__init__(self, model, orig_size_xyz)
+        CellBotGenotype.__init__(self, model)
 
         # The genotype consists of a single Compositional Pattern Producing Network (CPPN),
         # with multiple inter-dependent outputs determining the material constituting each voxel
@@ -126,7 +126,7 @@ my_objective_dict.add_objective(name="age", maximize=False, tag=None)
 # morphologies.
 # This information can be computed in Python (it's not returned by Voxelyze, thus tag=None),
 # which is done by counting the non empty voxels (material != 0) composing the robot.
-my_objective_dict.add_objective(name="size", maximize=False, tag=None)
+my_objective_dict.add_objective(name="phenotype.size", maximize=False, tag=None)
 
 
 # Initializing a population of SoftBots

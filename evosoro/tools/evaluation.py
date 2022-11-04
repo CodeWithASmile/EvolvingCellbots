@@ -6,6 +6,7 @@ import subprocess as sub
 from evosoro.cellbot import CellBot
 from evosoro.tools.read_write_voxelyze import read_voxlyze_results, write_voxelyze_file, write_voxelyze_file_cell
 from evosoro.tools.read_write_data import plot_growth
+from evosoro.tools.utils import rgetattr
 
 # TODO: make eval times relative to the number of simulated voxels
 # TODO: right now just saving files gen-id-fitness; but this should be more flexible (as option in objective dict?)
@@ -58,7 +59,6 @@ def evaluate_all(sim, env, pop, print_log, save_vxa_every, run_directory, run_na
     ids_to_analyze = []
 
     for ind in pop:
-
         if type(ind) == CellBot:
             ind.md5 = write_voxelyze_file_cell(sim, env, ind, run_directory, run_name)
         else:
@@ -175,17 +175,18 @@ def evaluate_all(sim, env, pop, print_log, save_vxa_every, run_directory, run_na
                                     #             # apply the specified function to the specified output node
                                     #             state = network.graph.node[name]["state"]
                                     #             setattr(ind, details["name"], details["node_func"](state))
-                                    '''
-                                    for name, details_phenotype in ind.genotype.to_phenotype_mapping.items():
-                                        if name == details["output_node_name"]:
-                                            state = details_phenotype["state"]
-                                            setattr(ind, details["name"], details["node_func"](state))
-                                    '''
-                            pop.already_evaluated[ind.md5] = [getattr(ind, details["name"])
+                                    if type(ind) != CellBot:
+                                        for name, details_phenotype in ind.genotype.to_phenotype_mapping.items():
+                                            if name == details["output_node_name"]:
+                                                state = details_phenotype["state"]
+                                                setattr(ind, details["name"], details["node_func"](state))
+                                    
+                            pop.already_evaluated[ind.md5] = [rgetattr(ind, details["name"])
                                                               for rank, details in
                                                               pop.objective_dict.items()]
                             pop.all_evaluated_individuals_ids += [this_id]
-
+                            # rank, details in ind.objective_dict.items():
+                            #    print_log.message("{} objective {} = {}".format(ind.id, details['name'],rgetattr(ind,details['name'])))
                             # update the run statistics and file management
                             if ind.fitness > pop.best_fit_so_far:
                                 pop.best_fit_so_far = ind.fitness

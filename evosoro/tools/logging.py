@@ -6,7 +6,7 @@ import subprocess as sub
 import numpy as np
 from glob import glob
 
-from evosoro.tools.utils import find_between
+from evosoro.tools.utils import find_between, rgetattr
 
 
 # TODO: double tabs to csv?
@@ -117,9 +117,9 @@ def record_individuals_data(pop, path, num_inds_to_save=None, print_to_terminal=
             objective = pop.objective_dict[rank]
             # objectives_string += str(getattr(ind, objective["name"])) + "\t\t" + \
             #                      str(getattr(ind, "parent_{}".format(objective["name"]))) + "\t\t"
-            objectives_string += "{}\t\t".format(getattr(ind, objective["name"])) + \
+            objectives_string += "{}\t\t".format(rgetattr(ind, objective["name"])) + \
                                  "{}\t\t".format(getattr(ind, "parent_{}".format(objective["name"])))
-            objectives_string_print += "{:15}\t\t".format(str(getattr(ind, objective["name"]))) + \
+            objectives_string_print += "{:15}\t\t".format(str(rgetattr(ind, objective["name"]))) + \
                                        "{:15}\t\t".format(str(getattr(ind, "parent_{}".format(objective["name"]))))
 
         # network outputs

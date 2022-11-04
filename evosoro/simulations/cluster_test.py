@@ -65,7 +65,7 @@ DT_FRAC = 0.9  # Fraction of the optimal integration step. The lower, the more s
 TIME_TO_TRY_AGAIN = 30  # (seconds) wait this long before assuming simulation crashed and resending
 MAX_EVAL_TIME = 120  # (seconds) wait this long before giving up on evaluating this individual
 SAVE_LINEAGES = False
-MAX_TIME = 8  # (hours) how long to wait before autosuspending
+MAX_TIME = 36  # (hours) how long to wait before autosuspending
 EXTRA_GENS = 0  # extra gens to run when continuing from checkpoint
 
 RUN_DIR = "cluster_test"  # Subdirectory where results are going to be generated
@@ -85,7 +85,7 @@ class MyGenotype(CellBotGenotype):
     def __init__(self, orig_size_xyz=IND_SIZE):
         # We instantiate a new genotype for each individual which must have the following properties
         model = CA(orig_size_xyz)
-        CellBotGenotype.__init__(self, model, orig_size_xyz)
+        CellBotGenotype.__init__(self, model)
 
         # The genotype consists of a single Compositional Pattern Producing Network (CPPN),
         # with multiple inter-dependent outputs determining the material constituting each voxel

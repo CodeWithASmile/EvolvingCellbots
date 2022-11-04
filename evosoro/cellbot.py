@@ -6,12 +6,12 @@ import torch
 import cc3d
 
 from evosoro.softbot import Phenotype, Population
-from evosoro.tools.utils import stable_sigmoid, xml_format, dominates
+from evosoro.tools.utils import stable_sigmoid, xml_format, dominates, rhasattr, rsetattr, rgetattr
 
 class CellBotGenotype(object):
     """A container for multiple networks, 'genetic code' copied with modification to produce offspring."""
 
-    def __init__(self, model, orig_size_xyz=(6, 6, 6), initial_noise=1, sigma = 0.03):
+    def __init__(self, model, initial_noise=1, sigma = 0.03):
 
         """
         Parameters
@@ -22,7 +22,6 @@ class CellBotGenotype(object):
 
         """
         self.model = model
-        self.orig_size_xyz = orig_size_xyz
         self.initial_noise = initial_noise
         self.sigma = sigma
 
@@ -49,6 +48,7 @@ class CellBotPhenotype(Phenotype):
         self.genotype = genotype
         self.eval_stage = eval_stage
         self.initialise()
+        self.size = np.count_nonzero(self.eval_state)
         
     def is_valid(self):
         if self.size > 0:
@@ -56,53 +56,50 @@ class CellBotPhenotype(Phenotype):
         else:
             return False
    
-
-    def _get_size(self):
-        return np.count_nonzero(self.eval_state)
-        
-    size = property(fget=_get_size)
-    
-    def _get_eval_state(self):
-        return self.state_history[self.eval_stage-1]
-        
-    eval_state = property(fget=_get_eval_state)
-    
+   
     def initialise(self):
         a = np.zeros(shape=self.genotype.model.robot_shape)
         np.put(a,a.size//2,1)
         self.state_history = [a]
         self.alpha_history = [a]
-        self.grow(self.eval_stage)
+        self.grow(self.eval_stage-1)
         
         
     def grow(self, stages=1):
         morphogens = np.stack((self.state_history[-1],self.alpha_history[-1]))
-        output_dim =  (2,3,3,3)
         for stage in range(0,stages):
+            morphogens = self.grow_step(morphogens)
+            self.state_history.append(morphogens[0])
+            self.alpha_history.append(morphogens[1])
             
-            padded_morphogens = np.pad(morphogens,((0,0),(1,1),(1,1),(1,1)))
-            neighbours = np.lib.stride_tricks.sliding_window_view(padded_morphogens, output_dim).reshape(math.prod(self.genotype.model.robot_shape),2,-1)
-            #debug = morphogens.squeeze()
-            cell_input = neighbours.reshape(math.prod(self.genotype.model.robot_shape),math.prod(output_dim))
-            batch = torch.Tensor(cell_input)
-            batch = batch.type(torch.FloatTensor)
-            output, hs = self.genotype.model(batch) 
-            output = output.detach().numpy()
-            
-            morph_temp = np.zeros((2, math.prod(self.genotype.model.robot_shape)))
-            cell_alive = np.amax(neighbours[:,1,:],axis=-1) > 0.1
-            morph_temp[0,cell_alive] = np.argmax(output[cell_alive,:-1],axis=1)
-            morph_temp[1,cell_alive] = stable_sigmoid(output[cell_alive,-1])
-            morph_temp = morph_temp.reshape(2, self.genotype.model.robot_shape[0], self.genotype.model.robot_shape[1], self.genotype.model.robot_shape[2])
-            
-            labels_out = cc3d.largest_k(morph_temp[0]!=0, 1, connectivity=6)
-            morph_temp[0][labels_out==0] = 0
-            morph_temp[1][labels_out==0] = 0        
-            
-            morphogens = deepcopy(morph_temp)
-            self.state_history.append(morph_temp[0])
-            self.alpha_history.append(morph_temp[1])
-   
+    def grow_step(self, morphogens):
+        output_dim =  (2,3,3,3)
+        padded_morphogens = np.pad(morphogens,((0,0),(1,1),(1,1),(1,1)))
+        neighbours = np.lib.stride_tricks.sliding_window_view(padded_morphogens, output_dim).reshape(math.prod(self.genotype.model.robot_shape),2,-1)
+        #debug = morphogens.squeeze()
+        cell_input = neighbours.reshape(math.prod(self.genotype.model.robot_shape),math.prod(output_dim))
+        batch = torch.Tensor(cell_input)
+        batch = batch.type(torch.FloatTensor)
+        output, hs = self.genotype.model(batch) 
+        output = output.detach().numpy()
+        
+        morph_temp = np.zeros((2, math.prod(self.genotype.model.robot_shape)))
+        cell_alive = np.amax(neighbours[:,1,:],axis=-1) > 0.1
+        morph_temp[0,cell_alive] = np.argmax(output[cell_alive,:-1],axis=1)
+        morph_temp[1,cell_alive] = stable_sigmoid(output[cell_alive,-1])
+        morph_temp = morph_temp.reshape(2, self.genotype.model.robot_shape[0], self.genotype.model.robot_shape[1], self.genotype.model.robot_shape[2])
+        
+        labels_out = cc3d.largest_k(morph_temp[0]!=0, 1, connectivity=6)
+        morph_temp[0][labels_out==0] = 0
+        morph_temp[1][labels_out==0] = 0 
+        return deepcopy(morph_temp)
+    
+    
+    def _get_eval_state(self):
+        return self.state_history[self.eval_stage-1]
+        
+    eval_state = property(fget=_get_eval_state)
+        
         
 
 class CellBot(object):
@@ -144,8 +141,8 @@ class CellBot(object):
         # set the objectives as attributes of self (and parent)
         self.objective_dict = objective_dict
         for rank, details in objective_dict.items():
-            if details["name"] != "age":
-                setattr(self, details["name"], details["worst_value"])
+            if not rhasattr(self,details["name"]):
+                rsetattr(self, details["name"], details["worst_value"])
             setattr(self, "parent_{}".format(details["name"]), details["worst_value"])
 
     def __deepcopy__(self, memo):
@@ -154,6 +151,11 @@ class CellBot(object):
         new = cls.__new__(cls)
         new.__dict__.update(deepcopy(self.__dict__, memo))
         return new
+    
+
+    
+        
+
 
 
 class CellBotPopulation(Population):

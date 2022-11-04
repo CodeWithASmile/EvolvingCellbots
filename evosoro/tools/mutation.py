@@ -3,6 +3,8 @@ import random
 import copy
 import inspect
 
+from evosoro.tools.utils import rgetattr
+
 
 def create_new_children_through_mutation(pop, print_log, new_children=None, mutate_network_probs=None,
                                          max_mutation_attempts=1500):
@@ -185,7 +187,7 @@ def create_new_children_through_mutation_cell(pop, print_log, new_children=None,
 
 
             for rank, goal in pop.objective_dict.items():
-                setattr(clone, "parent_{}".format(goal["name"]), getattr(clone, goal["name"]))
+                setattr(clone, "parent_{}".format(goal["name"]), rgetattr(clone, goal["name"]))
 
             clone.parent_genotype = ind.genotype
             clone.parent_id = clone.id
