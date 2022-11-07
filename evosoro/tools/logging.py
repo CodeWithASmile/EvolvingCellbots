@@ -4,6 +4,7 @@ import sys
 import networkx as nx
 import subprocess as sub
 import numpy as np
+import matplotlib.pyplot as plt
 from glob import glob
 
 from evosoro.tools.utils import find_between, rgetattr
@@ -172,7 +173,7 @@ def record_individuals_data(pop, path, num_inds_to_save=None, print_to_terminal=
 def initialize_folders(population, run_directory, run_name, save_networks, save_all_individual_data=True,
                        save_lineages=True):
 
-    # sub.call("mkdir " + run_directory + "/" + run_name + "/" + " 2>/dev/null", shell=True)
+    sub.call("mkdir simulation_data/ 2>/dev/null", shell=True)
     ret = sub.call("mkdir " + run_directory + "/" + " 2>/dev/null", shell=True)
     if ret != 0:
         response = input("****************************************************\n"
@@ -232,7 +233,8 @@ def make_gen_directories(population, run_directory, save_vxa_every, save_network
 
 
 def write_gen_stats(population, run_directory, run_name, save_vxa_every, save_pareto, save_networks,
-                    save_all_individual_data=True, num_inds_to_save=None, save_lineages=False):
+                    save_all_individual_data=True, num_inds_to_save=None, save_lineages=False,
+                    plot_fitness_every=0):
 
     write_champ_file(population, run_directory)
 
@@ -248,7 +250,11 @@ def write_gen_stats(population, run_directory, run_name, save_vxa_every, save_pa
 
     if population.gen % save_vxa_every == 0 and save_vxa_every > 0 and save_pareto:
         write_pareto_front(population, run_directory, run_name)
-
+        
+    if plot_fitness_every > 0:
+        population.update_fitness_stats()
+        if population.gen % plot_fitness_every == 0:
+            plot_fitness(population, run_directory)
     sub.call("rm " + run_directory + "/voxelyzeFiles/* 2>/dev/null", shell=True)  # clear the voxelyzeFiles folder
 
 
@@ -305,3 +311,42 @@ def write_networks(population, run_directory):
                          "/network_gml/Gen_%04i/network--%02i--fit_%.08f--id_%05i" %
                          (population.gen, net_idx, clone.fitness, clone.id) + ".txt")
             net_idx += 1
+            
+def plot_growth(ind, gen, run_directory, run_name):
+    fig = plt.figure(figsize=(20,10))
+    for it in range(0,len(ind.phenotype.state_history)):
+        #print(it)
+        voxels = ind.phenotype.state_history[it]
+        #voxels = voxels.transpose((2,1,0))
+        alpha_temp = ind.phenotype.alpha_history[it]
+        #alpha_temp = alpha_temp.transpose((2,1,0))
+        #print(voxels[1],voxels[1,3])
+        
+        ax = fig.add_subplot(4, 5, it+1, projection= '3d')
+        #plt.subplot(3, iterations/3+12, it+1)#,figsize=(15,15))
+        col = [[1, 1, 1], [0, 1, 1], [0, 0, 1], [1, 0, 0],[0, 1, 0]]
+
+        face_col = np.concatenate( (np.array(col)[voxels.astype(int)], np.expand_dims(alpha_temp, axis=3) ) , axis=3)
+        #face_col = np.concatenate( (np.array(col)[morphocegens[0].astype(int)], np.expand_dims(morphogens[1], axis=3) ) , axis=3) 
+        #face_col = face_col.transpose((1,2,0))
+        ax.set_aspect(aspect='auto')
+        ax.voxels( voxels, facecolors=face_col,edgecolor='k')#np.array(col)[morphogens[0].astype(int)])#,
+
+    plt.savefig(run_directory + "/bestSoFar/fitOnly/" + run_name +
+    "--Gen_%04i--fit_%.08f--id_%05i.pdf" %
+    (gen, ind.fitness, ind.id))
+    plt.close()
+
+def plot_fitness(population, run_directory):
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1) 
+    gen = range(0,population.gen+1)
+    ax.plot(gen, population.mean_fitness, linestyle='-', color='r', label='Mean')
+    ax.plot(gen, population.max_fitness, linestyle='dotted', color = 'b', label='Max fitness')
+    ax.set_xlabel('Generations')
+    ax.set_ylabel('Fitness')
+    ax.legend(loc='best')
+    plt.savefig('{0}/gen_{1:04d}.pdf'.format(run_directory,population.gen))
+    plt.close()
+
+   

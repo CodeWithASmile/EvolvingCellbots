@@ -46,7 +46,7 @@ from evosoro.tools.checkpointing import continue_from_checkpoint
 from evosoro.tools.mutation import create_new_children_through_mutation_cell
 
 
-VOXELYZE_VERSION = '_voxcad_land_water_cluster'
+VOXELYZE_VERSION = '_voxcad_cluster'
 # sub.call("rm ./voxelyze", shell=True)
 sub.call("cp ../" + VOXELYZE_VERSION + "/voxelyzeMain/voxelyze .", shell=True)  # Making sure to have the most up-to-date version of the Voxelyze physics engine
 # sub.call("chmod 755 ./voxelyze", shell=True)

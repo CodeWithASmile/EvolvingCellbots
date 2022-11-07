@@ -47,7 +47,7 @@ from evosoro.tools.checkpointing import continue_from_checkpoint
 from evosoro.tools.mutation import create_new_children_through_mutation_cell
 
 
-VOXELYZE_VERSION = '_voxcad_land_water_cluster'
+VOXELYZE_VERSION = '_voxcad_cluster'
 # sub.call("rm ./voxelyze", shell=True)
 sub.call("cp ../" + VOXELYZE_VERSION + "/voxelyzeMain/voxelyze .", shell=True)  # Making sure to have the most up-to-date version of the Voxelyze physics engine
 # sub.call("chmod 755 ./voxelyze", shell=True)
@@ -69,10 +69,10 @@ SAVE_LINEAGES = False
 MAX_TIME = 36  # (hours) how long to wait before autosuspending
 EXTRA_GENS = 0  # extra gens to run when continuing from checkpoint
 
-RUN_DIR = "stable_test"  # Subdirectory where results are going to be generated
+RUN_DIR = "results/stable_test"  # Subdirectory where results are going to be generated
 RUN_NAME = "StableTest"
 CHECKPOINT_EVERY = 10  # How often to save an snapshot of the execution state to later resume the algorithm
-SAVE_POPULATION_EVERY = 1  # How often (every x generations) we save a snapshot of the evolving population
+SAVE_POPULATION_EVERY = 10  # How often (every x generations) we save a snapshot of the evolving population
 
 EVAL_STAGE = 10
 STABLE_STAGES = [11,12,13,14,15]
@@ -88,7 +88,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     random.seed(args.seed)  # Initializing the random number generator for reproducibility
     np.random.seed(args.seed)
-    RUN_DIR = RUN_DIR + '_' + str(args.seed) + '_data'
+    RUN_DIR = 'simulation_data/' + RUN_DIR + '_' + str(args.seed)
     
     
     # Defining a custom genotype, inheriting from base class Genotype

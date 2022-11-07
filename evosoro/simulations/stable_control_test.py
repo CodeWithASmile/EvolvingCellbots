@@ -52,7 +52,7 @@ from evosoro.tools.mutation import create_new_children_through_mutation_cell
 from evosoro.tools.utils import stable_sigmoid
 
 
-VOXELYZE_VERSION = '_voxcad_land_water_cluster'
+VOXELYZE_VERSION = '_voxcad_cluster'
 # sub.call("rm ./voxelyze", shell=True)
 sub.call("cp ../" + VOXELYZE_VERSION + "/voxelyzeMain/voxelyze .", shell=True)  # Making sure to have the most up-to-date version of the Voxelyze physics engine
 # sub.call("chmod 755 ./voxelyze", shell=True)
@@ -61,9 +61,9 @@ sub.call("cp ../" + VOXELYZE_VERSION + "/voxelyzeMain/voxelyze .", shell=True)  
 
 
 NUM_RANDOM_INDS = 1  # Number of random individuals to insert each generation
-MAX_GENS = 1 # Number of generations
+MAX_GENS = 5 # Number of generations
 POPSIZE = 3  # Population size (number of individuals in the population)
-IND_SIZE = (7, 7, 7)  # Bounding box dimensions (x,y,z). e.g. IND_SIZE = (6, 6, 6) -> workspace is a cube of 6x6x6 voxels
+IND_SIZE = (3, 3, 3)  # Bounding box dimensions (x,y,z). e.g. IND_SIZE = (6, 6, 6) -> workspace is a cube of 6x6x6 voxels
 SIM_TIME = 5  # (seconds), including INIT_TIME!
 INIT_TIME = 1
 DT_FRAC = 0.9  # Fraction of the optimal integration step. The lower, the more stable (and slower) the simulation.
@@ -77,7 +77,8 @@ EXTRA_GENS = 0  # extra gens to run when continuing from checkpoint
 RUN_DIR = "stable_control_test"  # Subdirectory where results are going to be generated
 RUN_NAME = "StableControlTest"
 CHECKPOINT_EVERY = 10  # How often to save an snapshot of the execution state to later resume the algorithm
-SAVE_POPULATION_EVERY = 1  # How often (every x generations) we save a snapshot of the evolving population
+SAVE_POPULATION_EVERY = 10  # How often (every x generations) we save a snapshot of the evolving population
+PLOT_FITNESS_EVERY = 1
 
 EVAL_STAGE = 10
 MAX_STAGE = 15
@@ -94,7 +95,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     random.seed(args.seed)  # Initializing the random number generator for reproducibility
     np.random.seed(args.seed)
-    RUN_DIR = RUN_DIR + '_' + str(args.seed) + '_data'
+    RUN_DIR = 'simulation_data/' + RUN_DIR + '_' + str(args.seed)
     
     
     # Defining a custom genotype, inheriting from base class Genotype
@@ -227,12 +228,13 @@ if __name__ == "__main__":
         my_optimization.run(max_hours_runtime=MAX_TIME, max_gens=MAX_GENS, num_random_individuals=NUM_RANDOM_INDS,
                             directory=RUN_DIR, name=RUN_NAME, max_eval_time=MAX_EVAL_TIME,
                             time_to_try_again=TIME_TO_TRY_AGAIN, checkpoint_every=CHECKPOINT_EVERY,
-                            save_vxa_every=SAVE_POPULATION_EVERY, save_lineages=SAVE_LINEAGES)
+                            save_vxa_every=SAVE_POPULATION_EVERY, save_lineages=SAVE_LINEAGES, 
+                            plot_fitness_every=PLOT_FITNESS_EVERY)
 
     else:
         continue_from_checkpoint(directory=RUN_DIR, additional_gens=EXTRA_GENS, max_hours_runtime=MAX_TIME,
                                  max_eval_time=MAX_EVAL_TIME, time_to_try_again=TIME_TO_TRY_AGAIN,
                                  checkpoint_every=CHECKPOINT_EVERY, save_vxa_every=SAVE_POPULATION_EVERY,
-                                 save_lineages=SAVE_LINEAGES)
+                                 save_lineages=SAVE_LINEAGES, plot_fitness_every=PLOT_FITNESS_EVERY)
 
 

@@ -65,7 +65,7 @@ class PopulationBasedOptimizer(Optimizer):
     def run(self, max_hours_runtime=29, max_gens=3000, num_random_individuals=1, num_env_cycles=0,
             directory="tests_data", name="TestRun",
             max_eval_time=60, time_to_try_again=10, checkpoint_every=100, save_vxa_every=100, save_pareto=False,
-            save_nets=False, save_lineages=False, continued_from_checkpoint=False):
+            save_nets=False, save_lineages=False, continued_from_checkpoint=False, plot_fitness_every=0):
 
         if self.autosuspended:
             sub.call("rm %s/AUTOSUSPENDED" % directory, shell=True)
@@ -92,8 +92,8 @@ class PopulationBasedOptimizer(Optimizer):
                           self.name, max_eval_time, time_to_try_again, save_lineages)
             self.select(self.pop)  # only produces dominated_by stats, no selection happening (population not replaced)
             write_gen_stats(self.pop, self.directory, self.name, save_vxa_every, save_pareto, save_nets,
-                            save_lineages=save_lineages)
-
+                            save_lineages=save_lineages, plot_fitness_every=plot_fitness_every)
+            
         while self.pop.gen < max_gens:
 
             if self.pop.gen % checkpoint_every == 0:
@@ -141,7 +141,7 @@ class PopulationBasedOptimizer(Optimizer):
             # print population to stdout and save all individual data
             print_log.message("Saving statistics")
             write_gen_stats(self.pop, self.directory, self.name, save_vxa_every, save_pareto, save_nets,
-                            save_lineages=save_lineages)
+                            save_lineages=save_lineages, plot_fitness_every=plot_fitness_every)
 
             # replace population with selection
             self.pop.individuals = new_population

@@ -161,7 +161,10 @@ class CellBot(object):
 class CellBotPopulation(Population):
     """A population of CellBots."""
 
-
+    def __init__(self, objective_dict, genotype, phenotype, pop_size=30):
+        Population.__init__(self, objective_dict, genotype, phenotype, pop_size)
+        self.max_fitness = []
+        self.mean_fitness = []
 
 
     def append(self, individuals):
@@ -192,5 +195,10 @@ class CellBotPopulation(Population):
                 self.max_id += 1
                 valid = True
 
-
+    def update_fitness_stats(self):
+        fitness_values = []
+        for ind in self:
+            fitness_values.append(ind.fitness)
+        self.max_fitness.append(np.max(fitness_values))
+        self.mean_fitness.append(np.mean(fitness_values))
  

@@ -5,8 +5,8 @@ import subprocess as sub
 
 from evosoro.cellbot import CellBot
 from evosoro.tools.read_write_voxelyze import read_voxlyze_results, write_voxelyze_file, write_voxelyze_file_cell
-from evosoro.tools.read_write_data import plot_growth
 from evosoro.tools.utils import rgetattr
+from evosoro.tools.logging import plot_growth
 
 # TODO: make eval times relative to the number of simulated voxels
 # TODO: right now just saving files gen-id-fitness; but this should be more flexible (as option in objective dict?)
