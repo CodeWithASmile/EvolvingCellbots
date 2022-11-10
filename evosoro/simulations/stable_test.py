@@ -121,6 +121,8 @@ if __name__ == "__main__":
             self.state_history = [a]
             self.alpha_history = [a]
             self.grow(max([self.eval_stage] + self.stable_stages))
+            self.size = np.count_nonzero(self.eval_state)
+
             
         def _get_instability(self):
             target = self.state_history[self.eval_stage-1]

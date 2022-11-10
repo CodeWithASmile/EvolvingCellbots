@@ -43,7 +43,7 @@ from evosoro.tools.utils import count_occurrences, make_material_tree
 from evosoro.tools.checkpointing import continue_from_checkpoint
 
 
-VOXELYZE_VERSION = '_voxcad_land_water'  # Let's source a different version of VoxCad, supporting water
+VOXELYZE_VERSION = '_voxcad_cluster'  # Let's source a different version of VoxCad, supporting water
 #sub.call("rm ./voxelyze", shell=True)
 sub.call("cp ../" + VOXELYZE_VERSION + "/voxelyzeMain/voxelyze .", shell=True)  # Making sure to have the most up-to-date version of the Voxelyze physics engine
 #sub.call("chmod 755 ./voxelyze", shell=True)

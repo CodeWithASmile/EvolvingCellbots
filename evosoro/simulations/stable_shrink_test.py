@@ -61,28 +61,26 @@ sub.call("cp ../" + VOXELYZE_VERSION + "/voxelyzeMain/voxelyze .", shell=True)  
 
 
 NUM_RANDOM_INDS = 1  # Number of random individuals to insert each generation
-MAX_GENS = 5 # Number of generations
-POPSIZE = 3  # Population size (number of individuals in the population)
+MAX_GENS = 1000 # Number of generations
+POPSIZE = 15  # Population size (number of individuals in the population)
 IND_SIZE = (3, 3, 3)  # Bounding box dimensions (x,y,z). e.g. IND_SIZE = (6, 6, 6) -> workspace is a cube of 6x6x6 voxels
 SIM_TIME = 5  # (seconds), including INIT_TIME!
 INIT_TIME = 1
 DT_FRAC = 0.9  # Fraction of the optimal integration step. The lower, the more stable (and slower) the simulation.
 
-TIME_TO_TRY_AGAIN = 30  # (seconds) wait this long before assuming simulation crashed and resending
-MAX_EVAL_TIME = 120  # (seconds) wait this long before giving up on evaluating this individual
+TIME_TO_TRY_AGAIN = 5  # (seconds) wait this long before assuming simulation crashed and resending
+MAX_EVAL_TIME = 10  # (seconds) wait this long before giving up on evaluating this individual
 SAVE_LINEAGES = False
 MAX_TIME = 36  # (hours) how long to wait before autosuspending
 EXTRA_GENS = 0  # extra gens to run when continuing from checkpoint
 
-RUN_DIR = "stable_control_test"  # Subdirectory where results are going to be generated
-RUN_NAME = "StableControlTest"
+RUN_DIR = "stable_shrink_test"  # Subdirectory where results are going to be generated
+RUN_NAME = "StableShrinkTest"
 CHECKPOINT_EVERY = 10  # How often to save an snapshot of the execution state to later resume the algorithm
 SAVE_POPULATION_EVERY = 10  # How often (every x generations) we save a snapshot of the evolving population
 PLOT_FITNESS_EVERY = 1
 
-EVAL_STAGE = 10
-MAX_STAGE = 15
-CONTROL_MOD_OFFSET_RANGE = 2 
+CONTROL_SIGNAL = [1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,-1,-1,-1,-1,-1]
 
 
 
@@ -117,48 +115,42 @@ if __name__ == "__main__":
     # Define a custom phenotype, inheriting from the Phenotype class
     class MyPhenotype(CellBotPhenotype):
         
-        def __init__(self, genotype, eval_stage=EVAL_STAGE, control_mode_offset_range=CONTROL_MOD_OFFSET_RANGE, 
-                     max_stage=MAX_STAGE):
+        def __init__(self, genotype, control_signal=CONTROL_SIGNAL):
             # We instantiate a new genotype for each individual which must have the following properties
-            self.control_mod_offset_range = control_mode_offset_range
-            self.max_stage = max_stage
-            CellBotPhenotype.__init__(self, genotype, eval_stage=eval_stage)
+            self.control_signal = control_signal
+            self.stable_stage = self.control_signal.index(-1)
+            CellBotPhenotype.__init__(self, genotype, self.control_signal.index(0))
             
         def initialise(self):
             a = np.zeros(shape=self.genotype.model.robot_shape)
             np.put(a,a.size//2,1)
             self.state_history = [a]
             self.alpha_history = [a]
-            self.grow(self.max_stage-1)
+            self.grow(len(self.control_signal)-1)
             self.size = np.count_nonzero(self.eval_state)
 
-            
-        def get_control_value(self, stage, offset=0):
-            if stage < (self.eval_stage - 1 - offset):
-                return 1
-            else:
-                return 0
-              
+                         
         def _get_instability(self):
             target = self.state_history[self.eval_stage-1]
             changes = 0
-            for offset in range(-self.control_mod_offset_range, self.control_mod_offset_range):
-                morphogens = np.stack((self.state_history[-1],self.alpha_history[-1]))
-                temp_state_history = [morphogens[0]]
-                for stage in range(0,self.max_stage):
-                    control = self.get_control_value(stage, offset)
-                    morphogens = self.grow_step(morphogens, control)
-                    temp_state_history.append(morphogens[0])
-                for ss in range(self.eval_stage + offset, self.max_stage):
-                    changes = np.sum(target != temp_state_history[ss-1])
-                return changes
+            for ss in range(self.eval_stage, self.stable_stage):
+                changes = np.sum(target != self.state_history[ss-1])
+            return changes
             
         instability = property(fget=_get_instability)    
+        
+        def _get_shrunk(self):
+            a = np.zeros(shape=self.genotype.model.robot_shape)
+            np.put(a,a.size//2,1)
+            return np.sum(a != self.state_history[-1])
+
+            
+        shrunk = property(fget=_get_shrunk)    
         
         def grow(self, stages=1):
             morphogens = np.stack((self.state_history[-1],self.alpha_history[-1]))
             for stage in range(0,stages):
-                control = self.get_control_value(stage) 
+                control = self.control_signal[stage] 
                 morphogens = self.grow_step(morphogens, control)
                 self.state_history.append(morphogens[0])
                 self.alpha_history.append(morphogens[1])
@@ -204,6 +196,8 @@ if __name__ == "__main__":
     my_objective_dict.add_objective(name="fitness", maximize=True, tag="<normAbsoluteDisplacement>")
     
     my_objective_dict.add_objective(name="phenotype.instability", maximize=False, tag=None)
+    
+    my_objective_dict.add_objective(name="phenotype.shrunk", maximize=False, tag=None)
 
 
     # Add an objective to minimize the age of solutions: promotes diversity

@@ -35,10 +35,6 @@ from functools import partial
 import os
 import sys
 import argparse
-import math
-import torch
-import cc3d
-from copy import deepcopy
 
 # Appending repo's root dir in the python path to enable subsequent imports
 sys.path.append(os.getcwd() + "/../..")
@@ -49,7 +45,6 @@ from evosoro.cellbot import CellBotGenotype, CellBotPhenotype, CellBotPopulation
 from evosoro.tools.algorithms import ParetoOptimization
 from evosoro.tools.checkpointing import continue_from_checkpoint
 from evosoro.tools.mutation import create_new_children_through_mutation_cell
-from evosoro.tools.utils import stable_sigmoid
 
 
 VOXELYZE_VERSION = '_voxcad_cluster'
@@ -61,28 +56,27 @@ sub.call("cp ../" + VOXELYZE_VERSION + "/voxelyzeMain/voxelyze .", shell=True)  
 
 
 NUM_RANDOM_INDS = 1  # Number of random individuals to insert each generation
-MAX_GENS = 5 # Number of generations
-POPSIZE = 3  # Population size (number of individuals in the population)
-IND_SIZE = (3, 3, 3)  # Bounding box dimensions (x,y,z). e.g. IND_SIZE = (6, 6, 6) -> workspace is a cube of 6x6x6 voxels
+MAX_GENS = 20 # Number of generations
+POPSIZE = 4  # Population size (number of individuals in the population)
+IND_SIZE = (4, 4, 4)  # Bounding box dimensions (x,y,z). e.g. IND_SIZE = (6, 6, 6) -> workspace is a cube of 6x6x6 voxels
 SIM_TIME = 5  # (seconds), including INIT_TIME!
 INIT_TIME = 1
 DT_FRAC = 0.9  # Fraction of the optimal integration step. The lower, the more stable (and slower) the simulation.
 
 TIME_TO_TRY_AGAIN = 30  # (seconds) wait this long before assuming simulation crashed and resending
-MAX_EVAL_TIME = 120  # (seconds) wait this long before giving up on evaluating this individual
+MAX_EVAL_TIME = 60  # (seconds) wait this long before giving up on evaluating this individual
 SAVE_LINEAGES = False
 MAX_TIME = 36  # (hours) how long to wait before autosuspending
 EXTRA_GENS = 0  # extra gens to run when continuing from checkpoint
 
-RUN_DIR = "stable_control_test"  # Subdirectory where results are going to be generated
-RUN_NAME = "StableControlTest"
+RUN_DIR = "walking_test"  # Subdirectory where results are going to be generated
+RUN_NAME = "WalkingTest"
 CHECKPOINT_EVERY = 10  # How often to save an snapshot of the execution state to later resume the algorithm
 SAVE_POPULATION_EVERY = 10  # How often (every x generations) we save a snapshot of the evolving population
-PLOT_FITNESS_EVERY = 1
+PLOT_FITNESS_EVERY = 2
 
 EVAL_STAGE = 10
-MAX_STAGE = 15
-CONTROL_MOD_OFFSET_RANGE = 2 
+STABLE_STAGES = [11,12,13,14,15]
 
 
 
@@ -102,7 +96,7 @@ if __name__ == "__main__":
     class MyGenotype(CellBotGenotype):
         def __init__(self, orig_size_xyz=IND_SIZE):
             # We instantiate a new genotype for each individual which must have the following properties
-            model = CA(orig_size_xyz, control=True)
+            model = CA(orig_size_xyz)
             CellBotGenotype.__init__(self, model)
 
             # The genotype consists of a single Compositional Pattern Producing Network (CPPN),
@@ -117,77 +111,30 @@ if __name__ == "__main__":
     # Define a custom phenotype, inheriting from the Phenotype class
     class MyPhenotype(CellBotPhenotype):
         
-        def __init__(self, genotype, eval_stage=EVAL_STAGE, control_mode_offset_range=CONTROL_MOD_OFFSET_RANGE, 
-                     max_stage=MAX_STAGE):
+        def __init__(self, genotype, stable_stages=STABLE_STAGES):
             # We instantiate a new genotype for each individual which must have the following properties
-            self.control_mod_offset_range = control_mode_offset_range
-            self.max_stage = max_stage
-            CellBotPhenotype.__init__(self, genotype, eval_stage=eval_stage)
+            self.stable_stages = stable_stages
+            CellBotPhenotype.__init__(self, genotype, eval_stage=EVAL_STAGE)
             
         def initialise(self):
             a = np.zeros(shape=self.genotype.model.robot_shape)
             np.put(a,a.size//2,1)
             self.state_history = [a]
             self.alpha_history = [a]
-            self.grow(self.max_stage-1)
+            self.grow(max([self.eval_stage] + self.stable_stages)-1)
             self.size = np.count_nonzero(self.eval_state)
 
             
-        def get_control_value(self, stage, offset=0):
-            if stage < (self.eval_stage - 1 - offset):
-                return 1
-            else:
-                return 0
-              
         def _get_instability(self):
             target = self.state_history[self.eval_stage-1]
             changes = 0
-            for offset in range(-self.control_mod_offset_range, self.control_mod_offset_range):
-                morphogens = np.stack((self.state_history[-1],self.alpha_history[-1]))
-                temp_state_history = [morphogens[0]]
-                for stage in range(0,self.max_stage):
-                    control = self.get_control_value(stage, offset)
-                    morphogens = self.grow_step(morphogens, control)
-                    temp_state_history.append(morphogens[0])
-                for ss in range(self.eval_stage + offset, self.max_stage):
-                    changes = np.sum(target != temp_state_history[ss-1])
-                return changes
+            for ss in self.stable_stages:
+                changes = np.sum(target != self.state_history[ss-1])
+            return changes
             
-        instability = property(fget=_get_instability)    
-        
-        def grow(self, stages=1):
-            morphogens = np.stack((self.state_history[-1],self.alpha_history[-1]))
-            for stage in range(0,stages):
-                control = self.get_control_value(stage) 
-                morphogens = self.grow_step(morphogens, control)
-                self.state_history.append(morphogens[0])
-                self.alpha_history.append(morphogens[1])
-                
-        def grow_step(self, morphogens, control):
-            output_dim =  (2,3,3,3)
-            padded_morphogens = np.pad(morphogens,((0,0),(1,1),(1,1),(1,1)))
-            neighbours = np.lib.stride_tricks.sliding_window_view(padded_morphogens, output_dim).reshape(math.prod(self.genotype.model.robot_shape),2,-1)
-            #debug = morphogens.squeeze()
-            cell_input = neighbours.reshape(math.prod(self.genotype.model.robot_shape),math.prod(output_dim))
-            cell_input = np.c_[cell_input, np.full(math.prod(self.genotype.model.robot_shape),control)]
-            batch = torch.Tensor(cell_input)
-            batch = batch.type(torch.FloatTensor)
-            output, hs = self.genotype.model(batch) 
-            output = output.detach().numpy()
+        instability = property(fget=_get_instability)        
             
-            morph_temp = np.zeros((2, math.prod(self.genotype.model.robot_shape)))
-            cell_alive = np.amax(neighbours[:,1,:],axis=-1) > 0.1
-            morph_temp[0,cell_alive] = np.argmax(output[cell_alive,:-1],axis=1)
-            morph_temp[1,cell_alive] = stable_sigmoid(output[cell_alive,-1])
-            morph_temp = morph_temp.reshape(2, self.genotype.model.robot_shape[0], self.genotype.model.robot_shape[1], self.genotype.model.robot_shape[2])
             
-            labels_out = cc3d.largest_k(morph_temp[0]!=0, 1, connectivity=6)
-            morph_temp[0][labels_out==0] = 0
-            morph_temp[1][labels_out==0] = 0 
-            return deepcopy(morph_temp)
-    
-                
-                
 
     # Setting up the simulation object
     my_sim = Sim(dt_frac=DT_FRAC, simulation_time=SIM_TIME, fitness_eval_init_time=INIT_TIME)
@@ -201,10 +148,12 @@ if __name__ == "__main__":
 
     # Adding an objective named "fitness", which we want to maximize. This information is returned by Voxelyze
     # in a fitness .xml file, with a tag named "NormFinalDist"
-    my_objective_dict.add_objective(name="fitness", maximize=True, tag="<normAbsoluteDisplacement>")
+    my_objective_dict.add_objective(name="fitness", maximize=True, tag="<NormFinalDist>")
     
-    my_objective_dict.add_objective(name="phenotype.instability", maximize=False, tag=None)
+    my_objective_dict.add_objective(name="phenotype.size", maximize=False, tag=None)
 
+    
+    my_objective_dict.add_objective(name="phenotype.instability", maximize=False, tag=None, logging_only=True)
 
     # Add an objective to minimize the age of solutions: promotes diversity
     my_objective_dict.add_objective(name="age", maximize=False, tag=None)
@@ -214,8 +163,8 @@ if __name__ == "__main__":
     # morphologies.
     # This information can be computed in Python (it's not returned by Voxelyze, thus tag=None),
     # which is done by counting the non empty voxels (material != 0) composing the robot.
-    my_objective_dict.add_objective(name="phenotype.size", maximize=False, tag=None)
     
+
 
     # Initializing a population of SoftBots
     my_pop = CellBotPopulation(my_objective_dict, MyGenotype, MyPhenotype, pop_size=POPSIZE)
@@ -224,7 +173,6 @@ if __name__ == "__main__":
     my_optimization = ParetoOptimization(my_sim, my_env, my_pop,
                                          mutation_func=create_new_children_through_mutation_cell)
 
-    
     if not os.path.isfile("./" + RUN_DIR + "/pickledPops/Gen_0.pickle"):
         # start optimization
         my_optimization.run(max_hours_runtime=MAX_TIME, max_gens=MAX_GENS, num_random_individuals=NUM_RANDOM_INDS,
@@ -238,5 +186,3 @@ if __name__ == "__main__":
                                  max_eval_time=MAX_EVAL_TIME, time_to_try_again=TIME_TO_TRY_AGAIN,
                                  checkpoint_every=CHECKPOINT_EVERY, save_vxa_every=SAVE_POPULATION_EVERY,
                                  save_lineages=SAVE_LINEAGES, plot_fitness_every=PLOT_FITNESS_EVERY)
-
-

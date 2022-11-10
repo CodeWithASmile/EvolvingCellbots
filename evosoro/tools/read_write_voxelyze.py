@@ -407,7 +407,9 @@ def write_voxelyze_file(sim, env, individual, run_directory, run_name):
     return m.hexdigest()
 
 def write_voxelyze_file_cell(sim, env, individual, run_directory, run_name):
-
+    #print("ind {} size {}".format(individual.id, individual.phenotype.size))
+    #print(individual.phenotype.is_valid())
+    #print(individual.phenotype.eval_state)
     # TODO: work in base.py to remove redundant static text in this function
     voxelyze_file = open(run_directory + "/voxelyzeFiles/" + run_name + "--id_%05i.vxa" % individual.id, "w")
 
@@ -720,7 +722,7 @@ def write_voxelyze_file_cell(sim, env, individual, run_directory, run_name):
                 string_for_md5 += str(state)
         voxelyze_file.write("]]></Layer>\n")
     voxelyze_file.write("</Data>\n")
-
+    #print(string_for_md5)
 
 
     voxelyze_file.write(

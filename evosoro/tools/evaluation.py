@@ -66,6 +66,7 @@ def evaluate_all(sim, env, pop, print_log, save_vxa_every, run_directory, run_na
             ind.md5 = write_voxelyze_file(sim, env, ind, run_directory, run_name)
 
         # don't evaluate if invalid
+       
         if not ind.phenotype.is_valid():
             for rank, goal in pop.objective_dict.items():
                 if goal["name"] != "age":
@@ -108,12 +109,12 @@ def evaluate_all(sim, env, pop, print_log, save_vxa_every, run_directory, run_na
         # this protects against getting stuck when voxelyze doesn't return a fitness value
         # (diverging simulations, crash, error reading .vxa)
 
-        if time_waiting_for_fitness > pop.pop_size * max_eval_time:
+        if time_waiting_for_fitness > num_evaluated_this_gen * max_eval_time:
             # TODO ** WARNING: This could in fact alter the sim and undermine the reproducibility **
             all_done = False  # something bad with this individual, probably sim diverged
             break
 
-        if time_waiting_for_fitness > pop.pop_size * time_to_try_again * redo_attempts:
+        if time_waiting_for_fitness > num_evaluated_this_gen * time_to_try_again * redo_attempts:
             # try to redo any simulations that crashed
             redo_attempts += 1
             non_analyzed_ids = [idx for idx in ids_to_analyze if idx not in already_analyzed_ids]
@@ -196,7 +197,6 @@ def evaluate_all(sim, env, pop, print_log, save_vxa_every, run_directory, run_na
                                          (pop.gen, ind.fitness, ind.id), shell=True)
                                 if type(ind) == CellBot:
                                     plot_growth(ind,pop.gen,run_directory,run_name)
-
                             if save_lineages:
                                 sub.call("cp " + run_directory + "/voxelyzeFiles/" + run_name + "--id_%05i.vxa" %
                                          ind.id + " " + run_directory + "/ancestors/", shell=True)
@@ -221,7 +221,12 @@ def evaluate_all(sim, env, pop, print_log, save_vxa_every, run_directory, run_na
     if not all_done:
         print_log.message("WARNING: Couldn't get a fitness value in time for some individuals. "
                           "The min fitness was assigned for these individuals")
-
+        for idx in non_analyzed_ids:
+            sub.call("cp " + run_directory + "/voxelyzeFiles/" + run_name + "--id_%05i.vxa" %
+                     idx + " " + run_directory + "/quarantine/" +
+                     run_name + "--Gen_%04i--id_%05i.vxa" %
+                     (pop.gen, idx), shell=True)
+        
     print_log.message("\nAll Voxelyze evals finished in {} seconds".format(time.time() - start_time))
     print_log.message("num_evaluated_this_gen: {0}".format(num_evaluated_this_gen))
     print_log.message("total_evaluations: {}".format(pop.total_evaluations))

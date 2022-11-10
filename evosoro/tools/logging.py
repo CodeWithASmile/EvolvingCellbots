@@ -195,6 +195,7 @@ def initialize_folders(population, run_directory, run_name, save_networks, save_
     sub.call("chmod 755 " + run_directory + "/qhull", shell=True)  # Execution right for qhull
 
     sub.call("mkdir " + run_directory + "/fitnessFiles 2> /dev/null", shell=True)
+    sub.call("mkdir " + run_directory + "/quarantine 2> /dev/null", shell=True)
 
     sub.call("mkdir " + run_directory + "/bestSoFar 2> /dev/null", shell=True)
     sub.call("mkdir " + run_directory + "/bestSoFar/paretoFronts 2> /dev/null", shell=True)

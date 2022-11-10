@@ -64,7 +64,7 @@ INIT_TIME = 1
 DT_FRAC = 0.9  # Fraction of the optimal integration step. The lower, the more stable (and slower) the simulation.
 
 TIME_TO_TRY_AGAIN = 30  # (seconds) wait this long before assuming simulation crashed and resending
-MAX_EVAL_TIME = 120  # (seconds) wait this long before giving up on evaluating this individual
+MAX_EVAL_TIME = 60  # (seconds) wait this long before giving up on evaluating this individual
 SAVE_LINEAGES = False
 MAX_TIME = 36  # (hours) how long to wait before autosuspending
 EXTRA_GENS = 0  # extra gens to run when continuing from checkpoint
@@ -121,7 +121,9 @@ if __name__ == "__main__":
             np.put(a,a.size//2,1)
             self.state_history = [a]
             self.alpha_history = [a]
-            self.grow(max([self.eval_stage] + self.stable_stages))
+            self.grow(max([self.eval_stage] + self.stable_stages)-1)
+            self.size = np.count_nonzero(self.eval_state)
+
             
         def _get_instability(self):
             target = self.state_history[self.eval_stage-1]
@@ -146,7 +148,7 @@ if __name__ == "__main__":
 
     # Adding an objective named "fitness", which we want to maximize. This information is returned by Voxelyze
     # in a fitness .xml file, with a tag named "NormFinalDist"
-    my_objective_dict.add_objective(name="fitness", maximize=True, tag="<normAbsoluteDisplacement>")
+    my_objective_dict.add_objective(name="fitness", maximize=True, tag="<NormFinalDist>")
     
     my_objective_dict.add_objective(name="phenotype.instability", maximize=False, tag=None)
 

@@ -48,7 +48,6 @@ class CellBotPhenotype(Phenotype):
         self.genotype = genotype
         self.eval_stage = eval_stage
         self.initialise()
-        self.size = np.count_nonzero(self.eval_state)
         
     def is_valid(self):
         if self.size > 0:
@@ -63,6 +62,7 @@ class CellBotPhenotype(Phenotype):
         self.state_history = [a]
         self.alpha_history = [a]
         self.grow(self.eval_stage-1)
+        self.size = np.count_nonzero(self.eval_state)
         
         
     def grow(self, stages=1):
@@ -198,7 +198,9 @@ class CellBotPopulation(Population):
     def update_fitness_stats(self):
         fitness_values = []
         for ind in self:
-            fitness_values.append(ind.fitness)
+            if ind.fitness > 0:
+                fitness_values.append(ind.fitness)
         self.max_fitness.append(np.max(fitness_values))
         self.mean_fitness.append(np.mean(fitness_values))
+
  
