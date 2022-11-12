@@ -318,7 +318,7 @@ def plot_growth(ind, gen, run_directory, run_name):
     for it in range(0,len(ind.phenotype.state_history)):
         #print(it)
         voxels = ind.phenotype.state_history[it]
-        #voxels = voxels.transpose((2,1,0))
+        voxels = voxels.transpose((2,1,0))
         alpha_temp = ind.phenotype.alpha_history[it]
         #alpha_temp = alpha_temp.transpose((2,1,0))
         #print(voxels[1],voxels[1,3])
