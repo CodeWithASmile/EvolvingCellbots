@@ -35,7 +35,7 @@ from evosoro.tools.checkpointing import continue_from_checkpoint
 from evosoro.tools.mutation import create_new_children_through_mutation_cell
 
 
-VOXELYZE_VERSION = '_voxcad_cluster'
+VOXELYZE_VERSION = '_voxcad_land_water_cluster'
 # sub.call("rm ./voxelyze", shell=True)
 sub.call("cp ../" + VOXELYZE_VERSION + "/voxelyzeMain/voxelyze .", shell=True)  # Making sure to have the most up-to-date version of the Voxelyze physics engine
 # sub.call("chmod 755 ./voxelyze", shell=True)
@@ -135,7 +135,7 @@ if __name__ == "__main__":
 
     # Adding an objective named "fitness", which we want to maximize. This information is returned by Voxelyze
     # in a fitness .xml file, with a tag named "NormFinalDist"
-    my_objective_dict.add_objective(name="fitness", maximize=True, tag="<normFinalDist>")
+    my_objective_dict.add_objective(name="fitness", maximize=True, tag="<normAbsoluteDisplacement>")
     
     my_objective_dict.add_objective(name="phenotype.instability", maximize=False, tag=None, logging_only=True)
 
