@@ -314,6 +314,7 @@ def write_networks(population, run_directory):
             net_idx += 1
             
 def plot_growth(ind, gen, run_directory, run_name):
+    """Plot the growth of a CellBot"""
     fig = plt.figure(figsize=(20,10))
     for it in range(0,len(ind.phenotype.state_history)):
         #print(it)
@@ -339,6 +340,7 @@ def plot_growth(ind, gen, run_directory, run_name):
     plt.close()
 
 def plot_fitness(population, run_directory):
+    """Plot the average and mean fitness of a Cellbot population"""
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1) 
     gen = range(0,population.gen+1)

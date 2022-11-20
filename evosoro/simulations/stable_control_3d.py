@@ -52,7 +52,7 @@ from evosoro.tools.mutation import create_new_children_through_mutation_cell
 from evosoro.tools.utils import stable_sigmoid
 
 
-VOXELYZE_VERSION = '_voxcad_cluster'
+VOXELYZE_VERSION = '_voxcad_land_water_cluster'
 # sub.call("rm ./voxelyze", shell=True)
 sub.call("cp ../" + VOXELYZE_VERSION + "/voxelyzeMain/voxelyze .", shell=True)  # Making sure to have the most up-to-date version of the Voxelyze physics engine
 # sub.call("chmod 755 ./voxelyze", shell=True)
@@ -62,10 +62,10 @@ sub.call("cp ../" + VOXELYZE_VERSION + "/voxelyzeMain/voxelyze .", shell=True)  
 
 NUM_RANDOM_INDS = 1  # Number of random individuals to insert each generation
 MAX_GENS = 1000 # Number of generations
-POPSIZE = 15  # Population size (number of individuals in the population)
+POPSIZE = 30  # Population size (number of individuals in the population)
 IND_SIZE = (7, 7, 7)  # Bounding box dimensions (x,y,z). e.g. IND_SIZE = (6, 6, 6) -> workspace is a cube of 6x6x6 voxels
 SIM_TIME = 5  # (seconds), including INIT_TIME!
-INIT_TIME = 1
+INIT_TIME = 0.5
 DT_FRAC = 0.9  # Fraction of the optimal integration step. The lower, the more stable (and slower) the simulation.
 
 TIME_TO_TRY_AGAIN = 30  # (seconds) wait this long before assuming simulation crashed and resending
@@ -80,9 +80,9 @@ CHECKPOINT_EVERY = 10  # How often to save an snapshot of the execution state to
 SAVE_POPULATION_EVERY = 10  # How often (every x generations) we save a snapshot of the evolving population
 PLOT_FITNESS_EVERY = 10
 
-EVAL_STAGE = 10
-MAX_STAGE = 15
-CONTROL_MOD_OFFSET_RANGE = 2 
+EVAL_STAGE = 10 # How many growth stages of the cellular automata before the phenotype is evaluated
+MAX_STAGE = 15 # Maximum stage to evaluate
+CONTROL_MOD_OFFSET_RANGE = 2 # How far to offset the eval stage
 
 
 
@@ -105,21 +105,13 @@ if __name__ == "__main__":
             model = CA(orig_size_xyz, control=True)
             CellBotGenotype.__init__(self, model)
 
-            # The genotype consists of a single Compositional Pattern Producing Network (CPPN),
-            # with multiple inter-dependent outputs determining the material constituting each voxel
-            # (e.g. two types of active voxels, actuated with a different phase, two types of passive voxels, softer and stiffer)
-            # The material IDs that you will see in the phenotype mapping dependencies refer to a predefined palette of materials
-            # currently hardcoded in tools/read_write_voxelyze.py:
-            # (0: empty, 1: passiveSoft, 2: passiveHard, 3: active+, 4:active-),
-            # but this can be changed.
-
 
     # Define a custom phenotype, inheriting from the Phenotype class
     class MyPhenotype(CellBotPhenotype):
         
         def __init__(self, genotype, eval_stage=EVAL_STAGE, control_mode_offset_range=CONTROL_MOD_OFFSET_RANGE, 
                      max_stage=MAX_STAGE):
-            # We instantiate a new genotype for each individual which must have the following properties
+            # We instantiate a new phenotype for each individual which must have the following properties
             self.control_mod_offset_range = control_mode_offset_range
             self.max_stage = max_stage
             CellBotPhenotype.__init__(self, genotype, eval_stage=eval_stage)
@@ -201,7 +193,7 @@ if __name__ == "__main__":
 
     # Adding an objective named "fitness", which we want to maximize. This information is returned by Voxelyze
     # in a fitness .xml file, with a tag named "NormFinalDist"
-    my_objective_dict.add_objective(name="fitness", maximize=True, tag="<NormFinalDist>")
+    my_objective_dict.add_objective(name="fitness", maximize=True, tag="<normAbsoluteDisplacement>")
     
     my_objective_dict.add_objective(name="phenotype.instability", maximize=False, tag=None)
 

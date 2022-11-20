@@ -1,6 +1,6 @@
 import random
 import time
-import pickle
+import dill
 import numpy as np
 import subprocess as sub
 from functools import partial
@@ -37,7 +37,7 @@ class Optimizer(object):
         numpy_random_state = np.random.get_state()
         data = [self, random_state, numpy_random_state]
         with open('{0}/pickledPops/Gen_{1}.pickle'.format(directory, gen), 'wb') as handle:
-            pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            dill.dump(data, handle, protocol=dill.HIGHEST_PROTOCOL)
 
     def run(self, *args, **kwargs):
         raise NotImplementedError

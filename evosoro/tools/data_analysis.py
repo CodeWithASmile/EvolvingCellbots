@@ -21,7 +21,7 @@ def get_all_data(paths_to_files, delimiter="\t\t", lineterminator='\n', engine='
             start_length = len(df)
             df = df.drop_duplicates(subset=drop_duplicates_subset)
             num_duplicates = start_length - len(df)
-            print "{} duplicates".format(num_duplicates)
+            print("{} duplicates".format(num_duplicates))
             run = run[num_duplicates:]
 
     df['run'] = run

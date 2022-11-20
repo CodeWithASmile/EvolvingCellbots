@@ -60,13 +60,13 @@ def evaluate_all(sim, env, pop, print_log, save_vxa_every, run_directory, run_na
 
     for ind in pop:
         if type(ind) == CellBot:
+            # write the phenotype of a CellBot to a file so that VoxCad can access for sim.
             ind.md5 = write_voxelyze_file_cell(sim, env, ind, run_directory, run_name)
         else:
             # write the phenotype of a SoftBot to a file so that VoxCad can access for sim.
             ind.md5 = write_voxelyze_file(sim, env, ind, run_directory, run_name)
 
         # don't evaluate if invalid
-       
         if not ind.phenotype.is_valid():
             for rank, goal in pop.objective_dict.items():
                 if goal["name"] != "age":
@@ -169,13 +169,6 @@ def evaluate_all(sim, env, pop, print_log, save_vxa_every, run_directory, run_na
                                 if objective_values_dict[rank] is not None:
                                     setattr(ind, details["name"], objective_values_dict[rank])
                                 else:
-                                    # for network in ind.genotype:
-                                    #     for name in network.output_node_names:
-                                    #         if name == details["output_node_name"]:
-                                    #             print "here!"
-                                    #             # apply the specified function to the specified output node
-                                    #             state = network.graph.node[name]["state"]
-                                    #             setattr(ind, details["name"], details["node_func"](state))
                                     if type(ind) != CellBot:
                                         for name, details_phenotype in ind.genotype.to_phenotype_mapping.items():
                                             if name == details["output_node_name"]:
@@ -186,15 +179,13 @@ def evaluate_all(sim, env, pop, print_log, save_vxa_every, run_directory, run_na
                                                               for rank, details in
                                                               pop.objective_dict.items()]
                             pop.all_evaluated_individuals_ids += [this_id]
-                            # rank, details in ind.objective_dict.items():
-                            #    print_log.message("{} objective {} = {}".format(ind.id, details['name'],rgetattr(ind,details['name'])))
-                            # update the run statistics and file management
                             if ind.fitness > pop.best_fit_so_far:
                                 pop.best_fit_so_far = ind.fitness
                                 sub.call("cp " + run_directory + "/voxelyzeFiles/" + run_name + "--id_%05i.vxa" %
                                          ind.id + " " + run_directory + "/bestSoFar/fitOnly/" + run_name +
                                          "--Gen_%04i--fit_%.08f--id_%05i.vxa" %
                                          (pop.gen, ind.fitness, ind.id), shell=True)
+                                # Plot the growth of the most fit individuals
                                 if type(ind) == CellBot:
                                     plot_growth(ind,pop.gen,run_directory,run_name)
                             if save_lineages:

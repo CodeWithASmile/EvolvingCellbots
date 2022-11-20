@@ -15,23 +15,10 @@ Materials are identified through a material ID:
 
 Active+ and Active- voxels are in counter-phase.
 
-
-Additional References
----------------------
-
-This setup is similar to the one described in:
-
-    Cheney, N., MacCurdy, R., Clune, J., & Lipson, H. (2013).
-    Unshackling evolution: evolving soft robots with multiple materials and a powerful generative encoding.
-    In Proceedings of the 15th annual conference on Genetic and evolutionary computation (pp. 167-174). ACM.
-
-    Related video: https://youtu.be/EXuR_soDnFo
-
 """
 import random
 import numpy as np
 import subprocess as sub
-from functools import partial
 import os
 import sys
 
@@ -59,7 +46,7 @@ MAX_GENS = 1 # Number of generations
 POPSIZE = 3  # Population size (number of individuals in the population)
 IND_SIZE = (3, 3, 3)  # Bounding box dimensions (x,y,z). e.g. IND_SIZE = (6, 6, 6) -> workspace is a cube of 6x6x6 voxels
 SIM_TIME = 5  # (seconds), including INIT_TIME!
-INIT_TIME = 1
+INIT_TIME = 0.5
 DT_FRAC = 0.9  # Fraction of the optimal integration step. The lower, the more stable (and slower) the simulation.
 
 TIME_TO_TRY_AGAIN = 30  # (seconds) wait this long before assuming simulation crashed and resending
@@ -73,7 +60,7 @@ RUN_NAME = "Basic"
 CHECKPOINT_EVERY = 10  # How often to save an snapshot of the execution state to later resume the algorithm
 SAVE_POPULATION_EVERY = 1  # How often (every x generations) we save a snapshot of the evolving population
 
-EVAL_STAGE = 10
+EVAL_STAGE = 10 # How many growth stages of the cellular automata before the phenotype is evaluated
 
 SEED = 1
 random.seed(SEED)  # Initializing the random number generator for reproducibility
@@ -87,9 +74,6 @@ class MyGenotype(CellBotGenotype):
         model = CA(orig_size_xyz)
         CellBotGenotype.__init__(self, model)
 
-        # The genotype consists of a single Compositional Pattern Producing Network (CPPN),
-        # with multiple inter-dependent outputs determining the material constituting each voxel
-        # (e.g. two types of active voxels, actuated with a different phase, two types of passive voxels, softer and stiffer)
         # The material IDs that you will see in the phenotype mapping dependencies refer to a predefined palette of materials
         # currently hardcoded in tools/read_write_voxelyze.py:
         # (0: empty, 1: passiveSoft, 2: passiveHard, 3: active+, 4:active-),

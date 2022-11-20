@@ -15,23 +15,10 @@ Materials are identified through a material ID:
 
 Active+ and Active- voxels are in counter-phase.
 
-
-Additional References
----------------------
-
-This setup is similar to the one described in:
-
-    Cheney, N., MacCurdy, R., Clune, J., & Lipson, H. (2013).
-    Unshackling evolution: evolving soft robots with multiple materials and a powerful generative encoding.
-    In Proceedings of the 15th annual conference on Genetic and evolutionary computation (pp. 167-174). ACM.
-
-    Related video: https://youtu.be/EXuR_soDnFo
-
 """
 import random
 import numpy as np
 import subprocess as sub
-from functools import partial
 import os
 import sys
 import argparse
@@ -57,10 +44,10 @@ sub.call("cp ../" + VOXELYZE_VERSION + "/voxelyzeMain/voxelyze .", shell=True)  
 
 NUM_RANDOM_INDS = 1  # Number of random individuals to insert each generation
 MAX_GENS = 1000 # Number of generations
-POPSIZE = 15  # Population size (number of individuals in the population)
+POPSIZE = 30  # Population size (number of individuals in the population)
 IND_SIZE = (7, 7, 7)  # Bounding box dimensions (x,y,z). e.g. IND_SIZE = (6, 6, 6) -> workspace is a cube of 6x6x6 voxels
 SIM_TIME = 5  # (seconds), including INIT_TIME!
-INIT_TIME = 1
+INIT_TIME = 0.5
 DT_FRAC = 0.9  # Fraction of the optimal integration step. The lower, the more stable (and slower) the simulation.
 
 TIME_TO_TRY_AGAIN = 30  # (seconds) wait this long before assuming simulation crashed and resending
@@ -69,14 +56,14 @@ SAVE_LINEAGES = False
 MAX_TIME = 36  # (hours) how long to wait before autosuspending
 EXTRA_GENS = 0  # extra gens to run when continuing from checkpoint
 
-RUN_DIR = "walking"  # Subdirectory where results are going to be generated
-RUN_NAME = "Walking"
-CHECKPOINT_EVERY = 10  # How often to save an snapshot of the execution state to later resume the algorithm
-SAVE_POPULATION_EVERY = 10  # How often (every x generations) we save a snapshot of the evolving population
-PLOT_FITNESS_EVERY = 10
+RUN_DIR = "stable7x7x7"  # Subdirectory where results are going to be generated
+RUN_NAME = "Stable7x7x7"
+CHECKPOINT_EVERY = 100  # How often to save an snapshot of the execution state to later resume the algorithm
+SAVE_POPULATION_EVERY = 100  # How often (every x generations) we save a snapshot of the evolving population
+PLOT_FITNESS_EVERY = 100 # How often to plot the max and mean fitness
 
-EVAL_STAGE = 10
-STABLE_STAGES = [11,12,13,14,15]
+EVAL_STAGE = 10 # How many growth stages of the cellular automata before the phenotype is evaluated
+STABLE_STAGES = [11,12,13,14,15] # Which stages need to be stable
 
 
 
@@ -99,20 +86,10 @@ if __name__ == "__main__":
             model = CA(orig_size_xyz)
             CellBotGenotype.__init__(self, model)
 
-            # The genotype consists of a single Compositional Pattern Producing Network (CPPN),
-            # with multiple inter-dependent outputs determining the material constituting each voxel
-            # (e.g. two types of active voxels, actuated with a different phase, two types of passive voxels, softer and stiffer)
-            # The material IDs that you will see in the phenotype mapping dependencies refer to a predefined palette of materials
-            # currently hardcoded in tools/read_write_voxelyze.py:
-            # (0: empty, 1: passiveSoft, 2: passiveHard, 3: active+, 4:active-),
-            # but this can be changed.
-
-
     # Define a custom phenotype, inheriting from the Phenotype class
     class MyPhenotype(CellBotPhenotype):
         
         def __init__(self, genotype, stable_stages=STABLE_STAGES):
-            # We instantiate a new genotype for each individual which must have the following properties
             self.stable_stages = stable_stages
             CellBotPhenotype.__init__(self, genotype, eval_stage=EVAL_STAGE)
             
@@ -123,8 +100,10 @@ if __name__ == "__main__":
             self.alpha_history = [a]
             self.grow(max([self.eval_stage] + self.stable_stages)-1)
             self.size = np.count_nonzero(self.eval_state)
+
             
         def _get_instability(self):
+            """Calculate how many differences there are between the eval stage and each stable stage"""
             target = self.state_history[self.eval_stage-1]
             changes = 0
             for ss in self.stable_stages:
@@ -147,9 +126,9 @@ if __name__ == "__main__":
 
     # Adding an objective named "fitness", which we want to maximize. This information is returned by Voxelyze
     # in a fitness .xml file, with a tag named "NormFinalDist"
-    my_objective_dict.add_objective(name="fitness", maximize=True, tag="<normFinalDist>")
+    my_objective_dict.add_objective(name="fitness", maximize=True, tag="<NormFinalDist>")
     
-    my_objective_dict.add_objective(name="phenotype.instability", maximize=False, tag=None, logging_only=True)
+    my_objective_dict.add_objective(name="phenotype.instability", maximize=False, tag=None)
 
     # Add an objective to minimize the age of solutions: promotes diversity
     my_objective_dict.add_objective(name="age", maximize=False, tag=None)
@@ -170,6 +149,7 @@ if __name__ == "__main__":
     my_optimization = ParetoOptimization(my_sim, my_env, my_pop,
                                          mutation_func=create_new_children_through_mutation_cell)
 
+    
     if not os.path.isfile("./" + RUN_DIR + "/pickledPops/Gen_0.pickle"):
         # start optimization
         my_optimization.run(max_hours_runtime=MAX_TIME, max_gens=MAX_GENS, num_random_individuals=NUM_RANDOM_INDS,
