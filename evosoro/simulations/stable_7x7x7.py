@@ -34,7 +34,7 @@ from evosoro.tools.checkpointing import continue_from_checkpoint
 from evosoro.tools.mutation import create_new_children_through_mutation_cell
 
 
-VOXELYZE_VERSION = '_voxcad_cluster'
+VOXELYZE_VERSION = '_voxcad_land_water_cluster'
 # sub.call("rm ./voxelyze", shell=True)
 sub.call("cp ../" + VOXELYZE_VERSION + "/voxelyzeMain/voxelyze .", shell=True)  # Making sure to have the most up-to-date version of the Voxelyze physics engine
 # sub.call("chmod 755 ./voxelyze", shell=True)
@@ -56,8 +56,8 @@ SAVE_LINEAGES = False
 MAX_TIME = 36  # (hours) how long to wait before autosuspending
 EXTRA_GENS = 0  # extra gens to run when continuing from checkpoint
 
-RUN_DIR = "stable7x7x7"  # Subdirectory where results are going to be generated
-RUN_NAME = "Stable7x7x7"
+RUN_DIR = "stable_7x7x7"  # Subdirectory where results are going to be generated
+RUN_NAME = "Stable_7x7x7"
 CHECKPOINT_EVERY = 100  # How often to save an snapshot of the execution state to later resume the algorithm
 SAVE_POPULATION_EVERY = 100  # How often (every x generations) we save a snapshot of the evolving population
 PLOT_FITNESS_EVERY = 100 # How often to plot the max and mean fitness
@@ -126,7 +126,7 @@ if __name__ == "__main__":
 
     # Adding an objective named "fitness", which we want to maximize. This information is returned by Voxelyze
     # in a fitness .xml file, with a tag named "NormFinalDist"
-    my_objective_dict.add_objective(name="fitness", maximize=True, tag="<NormFinalDist>")
+    my_objective_dict.add_objective(name="fitness", maximize=True, tag="<normAbsoluteDisplacement>y")
     
     my_objective_dict.add_objective(name="phenotype.instability", maximize=False, tag=None)
 
