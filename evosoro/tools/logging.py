@@ -175,6 +175,7 @@ def initialize_folders(population, run_directory, run_name, save_networks, save_
 
     sub.call("mkdir simulation_data/ 2>/dev/null", shell=True)
     ret = sub.call("mkdir " + run_directory + "/" + " 2>/dev/null", shell=True)
+    """
     if ret != 0:
         response = input("****************************************************\n"
                              "** WARNING ** A directory named " + run_directory +
@@ -184,7 +185,7 @@ def initialize_folders(population, run_directory, run_name, save_networks, save_
                  "****************************************************\n\n")
         else:
             print("****************************************************\n")
-
+    """
     # clear directory
     sub.call("rm -rf " + run_directory + "/* 2>/dev/null", shell=True)
 
