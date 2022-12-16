@@ -126,7 +126,7 @@ if __name__ == "__main__":
 
     # Adding an objective named "fitness", which we want to maximize. This information is returned by Voxelyze
     # in a fitness .xml file, with a tag named "NormFinalDist"
-    my_objective_dict.add_objective(name="fitness", maximize=True, tag="<normAbsoluteDisplacement>y")
+    my_objective_dict.add_objective(name="fitness", maximize=True, tag="<normAbsoluteDisplacement>")
     
     my_objective_dict.add_objective(name="phenotype.instability", maximize=False, tag=None)
 
