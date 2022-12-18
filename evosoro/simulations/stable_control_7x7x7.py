@@ -135,7 +135,7 @@ if __name__ == "__main__":
             target = self.state_history[self.eval_stage-1]
             changes = 0
             for offset in range(-self.control_mod_offset_range, self.control_mod_offset_range):
-                morphogens = np.stack((self.state_history[-1],self.alpha_history[-1]))
+                morphogens = np.stack((self.state_history[0],self.alpha_history[0]))
                 temp_state_history = [morphogens[0]]
                 for stage in range(0,self.max_stage):
                     control = self.get_control_value(stage, offset)
