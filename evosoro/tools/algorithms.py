@@ -5,7 +5,7 @@ import numpy as np
 import subprocess as sub
 from functools import partial
 
-from evosoro.tools.evaluation import evaluate_all
+from evosoro.tools.evaluation import evaluate_all, evaluate_none
 from evosoro.tools.selection import pareto_selection, pareto_tournament_selection
 from evosoro.tools.mutation import create_new_children_through_mutation, genome_wide_mutation
 from evosoro.tools.logging import PrintLog, initialize_folders, make_gen_directories, write_gen_stats
@@ -89,7 +89,7 @@ class PopulationBasedOptimizer(Optimizer):
             make_gen_directories(self.pop, self.directory, save_vxa_every, save_nets)
             sub.call("touch {}/RUNNING".format(self.directory), shell=True)
             self.evaluate(self.sim, self.env[self.curr_env_idx], self.pop, print_log, save_vxa_every, self.directory,
-                          self.name, max_eval_time, time_to_try_again, save_lineages)
+                              self.name, max_eval_time, time_to_try_again, save_lineages)
             self.select(self.pop)  # only produces dominated_by stats, no selection happening (population not replaced)
             write_gen_stats(self.pop, self.directory, self.name, save_vxa_every, save_pareto, save_nets,
                             save_lineages=save_lineages, plot_fitness_every=plot_fitness_every)
@@ -148,15 +148,22 @@ class PopulationBasedOptimizer(Optimizer):
             print_log.message("Population size reduced to %d" % len(self.pop))
 
         if not self.autosuspended:  # print end of run stats
+            print_log.message("Saving checkpoint at generation {0}".format(self.pop.gen+1), timer_name="start")
+            self.save_checkpoint(self.directory, self.pop.gen)
             print_log.message("Finished {0} generations".format(self.pop.gen + 1))
             print_log.message("DONE!", timer_name="start")
             sub.call("touch {0}/RUN_FINISHED && rm {0}/RUNNING".format(self.directory), shell=True)
+
 
 
 class ParetoOptimization(PopulationBasedOptimizer):
     def __init__(self, sim, env, pop,mutation_func=create_new_children_through_mutation):
         PopulationBasedOptimizer.__init__(self, sim, env, pop, pareto_selection, mutation_func)
 
+class NoEvalParetoOptimization(ParetoOptimization):
+    def __init__(self, sim, env, pop, mutation_func=create_new_children_through_mutation):
+        ParetoOptimization.__init__(self, sim, env, pop, mutation_func)
+        self.evaluate = evaluate_none
 
 class ParetoTournamentOptimization(PopulationBasedOptimizer):
     def __init__(self, sim, env, pop):
