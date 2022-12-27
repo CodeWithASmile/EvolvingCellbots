@@ -221,3 +221,42 @@ def evaluate_all(sim, env, pop, print_log, save_vxa_every, run_directory, run_na
     print_log.message("\nAll Voxelyze evals finished in {} seconds".format(time.time() - start_time))
     print_log.message("num_evaluated_this_gen: {0}".format(num_evaluated_this_gen))
     print_log.message("total_evaluations: {}".format(pop.total_evaluations))
+    
+def evaluate_none(sim, env, pop, print_log, save_vxa_every, run_directory, run_name, max_eval_time=60,
+                 time_to_try_again=10, save_lineages=False):
+    
+    for ind in pop:
+        if type(ind) == CellBot:
+            # write the phenotype of a CellBot to a file so that VoxCad can access for sim.
+            ind.md5 = write_voxelyze_file_cell(sim, env, ind, run_directory, run_name)
+        if not ind.phenotype.is_valid():
+            for rank, goal in pop.objective_dict.items():
+                if goal["name"] != "age":
+                    setattr(ind, goal["name"], goal["worst_value"])
+            print_log.message("Skipping invalid individual")
+        else:
+            ind.md5 = write_voxelyze_file_cell(sim, env, ind, run_directory, run_name)
+            for rank, goal in pop.objective_dict.items():
+                if goal["name"] == "fitness":
+                    setattr(ind, goal["name"], rgetattr(ind,"phenotype.fitness"))
+            if ind.fitness > pop.best_fit_so_far:
+                pop.best_fit_so_far = ind.fitness
+                sub.call("cp " + run_directory + "/voxelyzeFiles/" + run_name + "--id_%05i.vxa" %
+                         ind.id + " " + run_directory + "/bestSoFar/fitOnly/" + run_name +
+                         "--Gen_%04i--fit_%.08f--id_%05i.vxa" %
+                         (pop.gen, ind.fitness, ind.id), shell=True)
+                # Plot the growth of the most fit individuals
+                if type(ind) == CellBot:
+                    plot_growth(ind,pop.gen,run_directory,run_name)
+            if save_lineages:
+                sub.call("cp " + run_directory + "/voxelyzeFiles/" + run_name + "--id_%05i.vxa" %
+                         ind.id + " " + run_directory + "/ancestors/", shell=True)
+ 
+            if pop.gen % save_vxa_every == 0 and save_vxa_every > 0:
+                sub.call("mv " + run_directory + "/voxelyzeFiles/" + run_name + "--id_%05i.vxa" %
+                         ind.id + " " + run_directory + "/Gen_%04i/" % pop.gen +
+                         run_name + "--Gen_%04i--fit_%.08f--id_%05i.vxa" %
+                         (pop.gen, ind.fitness, ind.id), shell=True)
+            else:
+                sub.call("rm " + run_directory + "/voxelyzeFiles/" + run_name + "--id_%05i.vxa" %
+                         ind.id, shell=True)

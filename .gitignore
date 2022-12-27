@@ -48,6 +48,16 @@ coverage.xml
 *.mo
 *.pot
 
+
+*.npy
+*.eps
+i
+A
+A
+B
+A
+
+
 # Django stuff:
 *.log
 
