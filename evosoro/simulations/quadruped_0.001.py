@@ -60,15 +60,15 @@ SAVE_LINEAGES = False
 MAX_TIME = 36  # (hours) how long to wait before autosuspending
 EXTRA_GENS = 0  # extra gens to run when continuing from checkpoint
 
-RUN_DIR = "quadruped_sigma_0.03"  # Subdirectory where results are going to be generated
-RUN_NAME = "QuadrupedSigma0.03"
+RUN_DIR = "quadruped_sigma_0.001"  # Subdirectory where results are going to be generated
+RUN_NAME = "QuadrupedSigma0.001"
 CHECKPOINT_EVERY = 100  # How often to save an snapshot of the execution state to later resume the algorithm
 SAVE_POPULATION_EVERY = 100  # How often (every x generations) we save a snapshot of the evolving population
 PLOT_FITNESS_EVERY = 100 # How often to plot the max and mean fitness
 
 EVAL_STAGE = 10 # How many growth stages of the cellular automata before the phenotype is evaluated
 
-SIGMA = 0.03
+SIGMA = 0.001
 
 TARGET = np.array([[[3,0,0,0,0,0,3],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[3,0,0,0,0,0,3]],
                    [[3,0,0,0,0,0,3],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[3,0,0,0,0,0,3]],
