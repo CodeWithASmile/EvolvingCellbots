@@ -202,13 +202,14 @@ def create_new_children_through_mutation_cell(pop, print_log, new_children=None,
                 candidate = copy.deepcopy(clone)
                 candidate.genotype.model.mutate()
                 candidate.phenotype.initialise()
+                new_state = candidate.phenotype.eval_state
+                changes = np.array(new_state != old_state, dtype=np.bool)
+                candidate.phenotype.changes_from_parent = np.sum(changes)
                 if candidate.genotype.model.allow_neutral_mutations:
                     done = True
                     clone = copy.deepcopy(candidate)
                     break
                 else:
-                    new_state = candidate.phenotype.eval_state
-                    changes = np.array(new_state != old_state, dtype=np.bool)
                     if np.any(changes) and candidate.phenotype.is_valid():
                         done = True
                         clone = copy.deepcopy(candidate)  # SAM: ensures change is made to every net

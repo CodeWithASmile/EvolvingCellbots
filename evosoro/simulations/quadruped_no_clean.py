@@ -23,9 +23,9 @@ import subprocess as sub
 import os
 import sys
 import argparse
+from copy import deepcopy
+import math
 import torch
-
-from torch.nn.utils import parameters_to_vector, vector_to_parameters
 
 # Appending repo's root dir in the python path to enable subsequent imports
 sys.path.append(os.getcwd() + "/../..")
@@ -36,6 +36,7 @@ from evosoro.cellbot import CellBotGenotype, CellBotPhenotype, CellBotPopulation
 from evosoro.tools.algorithms import NoEvalParetoOptimization
 from evosoro.tools.checkpointing import continue_from_checkpoint
 from evosoro.tools.mutation import create_new_children_through_mutation_cell
+from evosoro.tools.utils import stable_sigmoid
 
 
 VOXELYZE_VERSION = '_voxcad_land_water_cluster'
@@ -60,16 +61,14 @@ SAVE_LINEAGES = False
 MAX_TIME = 36  # (hours) how long to wait before autosuspending
 EXTRA_GENS = 0  # extra gens to run when continuing from checkpoint
 
-RUN_DIR = "quadruped_sigma_0.01"  # Subdirectory where results are going to be generated
-RUN_NAME = "QuadrupedSigma0.01"
+RUN_DIR = "quadruped_no_clean"  # Subdirectory where results are going to be generated
+RUN_NAME = "QuadrupedNoClean"
 CHECKPOINT_EVERY = 100  # How often to save an snapshot of the execution state to later resume the algorithm
 SAVE_POPULATION_EVERY = 100  # How often (every x generations) we save a snapshot of the evolving population
 PLOT_FITNESS_EVERY = 100 # How often to plot the max and mean fitness
 
 EVAL_STAGE = 10 # How many growth stages of the cellular automata before the phenotype is evaluated
-
-SIGMA = 0.01
-MUTATION_RATE = 1
+STABLE_STAGES = [11,12,13,14,15] # Which stages need
 
 TARGET = np.array([[[3,0,0,0,0,0,3],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[3,0,0,0,0,0,3]],
                    [[3,0,0,0,0,0,3],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[3,0,0,0,0,0,3]],
@@ -92,30 +91,83 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
     RUN_DIR = 'simulation_data/' + RUN_DIR + '_' + str(args.seed)
     
-        
+    
     # Defining a custom genotype, inheriting from base class Genotype
     class MyGenotype(CellBotGenotype):
         def __init__(self, orig_size_xyz=IND_SIZE):
             # We instantiate a new genotype for each individual which must have the following properties
-            model = CA(orig_size_xyz, sigma=SIGMA)
+            model = CA(orig_size_xyz)
             CellBotGenotype.__init__(self, model)
-            
+
+            # The genotype consists of a single Compositional Pattern Producing Network (CPPN),
+            # with multiple inter-dependent outputs determining the material constituting each voxel
+            # (e.g. two types of active voxels, actuated with a different phase, two types of passive voxels, softer and stiffer)
+            # The material IDs that you will see in the phenotype mapping dependencies refer to a predefined palette of materials
+            # currently hardcoded in tools/read_write_voxelyze.py:
+            # (0: empty, 1: passiveSoft, 2: passiveHard, 3: active+, 4:active-),
+            # but this can be changed.
+
+
     # Define a custom phenotype, inheriting from the Phenotype class
     class MyPhenotype(CellBotPhenotype):
         
-        def __init__(self, genotype, target=TARGET):
+        def __init__(self, genotype, stable_stages=STABLE_STAGES, target=TARGET):
             # We instantiate a new genotype for each individual which must have the following properties
+            self.stable_stages = stable_stages
             self.target = target
             CellBotPhenotype.__init__(self, genotype, eval_stage=EVAL_STAGE)
-                 
+            
+        def initialise(self):
+            a = np.zeros(shape=self.genotype.model.robot_shape)
+            np.put(a,a.size//2,1)
+            self.state_history = [a]
+            self.alpha_history = [a]
+            self.grow(max([self.eval_stage] + self.stable_stages)-1)
+            self.size = np.count_nonzero(self.eval_state)
+            
+        def _get_instability(self):
+            target = self.state_history[self.eval_stage-1]
+            changes = 0
+            for ss in self.stable_stages:
+                changes = np.sum(target != self.state_history[ss-1])
+            return changes
+        
+            
+        instability = property(fget=_get_instability)        
             
         def _get_fitness(self):
             changes = np.sum(self.target != self.eval_state)
             return np.prod(self.target.shape) - changes
         
             
-        fitness = property(fget=_get_fitness)        
-                      
+        fitness = property(fget=_get_fitness) 
+        
+        def grow_step(self, morphogens):
+            """Grow the CellBot for a single stage
+            
+            Parameters
+            ----------
+            morphogens : numpy array
+                The current state of the CellBot's morphology from which to grow
+            """
+            output_dim =  (2,3,3,3)
+            padded_morphogens = np.pad(morphogens,((0,0),(1,1),(1,1),(1,1))) # Pad the robot so that a neighbourhood can be found
+            neighbours = np.lib.stride_tricks.sliding_window_view(padded_morphogens, output_dim).reshape(
+                math.prod(self.genotype.model.robot_shape),2,-1) # Calculate the neighbours for each cell
+            cell_input = neighbours.reshape(math.prod(self.genotype.model.robot_shape),math.prod(output_dim))
+            batch = torch.Tensor(cell_input)
+            batch = batch.type(torch.FloatTensor)
+            output, hs = self.genotype.model(batch) # Input each cell's neighbours into the model
+            output = output.detach().numpy()
+            
+            morph_temp = np.zeros((2, math.prod(self.genotype.model.robot_shape)))
+            cell_alive = np.amax(neighbours[:,1,:],axis=-1) > 0.1 # Calculate whether cells should be alive or dead
+            morph_temp[0,cell_alive] = np.argmax(output[cell_alive,:-1],axis=1) # Calculate the material from the maximum of the first outputs for each cell
+            morph_temp[1,cell_alive] = stable_sigmoid(output[cell_alive,-1]) # Calculate the alpha value
+            morph_temp = morph_temp.reshape(2, self.genotype.model.robot_shape[0], self.genotype.model.robot_shape[1], self.genotype.model.robot_shape[2])
+            
+            return deepcopy(morph_temp)
+                        
 
     # Setting up the simulation object
     my_sim = Sim(dt_frac=DT_FRAC, simulation_time=SIM_TIME, fitness_eval_init_time=INIT_TIME)
@@ -131,8 +183,8 @@ if __name__ == "__main__":
     # in a fitness .xml file, with a tag named "NormFinalDist"
     my_objective_dict.add_objective(name="fitness", maximize=True, tag=None)
     
-    my_objective_dict.add_objective(name="phenotype.changes_from_parent", maximize=False, tag=None, logging_only=True)
-    
+    my_objective_dict.add_objective(name="phenotype.instability", maximize=False, tag=None, logging_only=True)
+
     # Add an objective to minimize the age of solutions: promotes diversity
     my_objective_dict.add_objective(name="age", maximize=False, tag=None)
 

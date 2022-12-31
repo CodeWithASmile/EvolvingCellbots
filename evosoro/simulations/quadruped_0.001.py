@@ -130,6 +130,8 @@ if __name__ == "__main__":
     # in a fitness .xml file, with a tag named "NormFinalDist"
     my_objective_dict.add_objective(name="fitness", maximize=True, tag=None)
     
+    my_objective_dict.add_objective(name="phenotype.changes_from_parent", maximize=False, tag=None, logging_only=True)
+    
     # Add an objective to minimize the age of solutions: promotes diversity
     my_objective_dict.add_objective(name="age", maximize=False, tag=None)
 

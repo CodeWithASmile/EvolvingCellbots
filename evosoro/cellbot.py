@@ -45,6 +45,7 @@ class CellBotPhenotype(Phenotype):
         """
         self.genotype = genotype
         self.eval_stage = eval_stage
+        self.changes_from_parent = -1
         self.initialise()
         
     def is_valid(self):
