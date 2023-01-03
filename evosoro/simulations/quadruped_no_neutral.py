@@ -68,7 +68,7 @@ PLOT_FITNESS_EVERY = 100 # How often to plot the max and mean fitness
 
 EVAL_STAGE = 10 # How many growth stages of the cellular automata before the phenotype is evaluated
 
-SIGMA = 0.0001
+SIGMA = 0.001
 
 TARGET = np.array([[[3,0,0,0,0,0,3],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[3,0,0,0,0,0,3]],
                    [[3,0,0,0,0,0,3],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[3,0,0,0,0,0,3]],
